@@ -3,7 +3,7 @@
 # CreateTime: 2023/5/10 10:45
 # FileName:
 
-from controller import (
+from . import (
     template_router,
 )
 

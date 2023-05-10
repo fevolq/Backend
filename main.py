@@ -24,8 +24,7 @@ log_util.init_logging(config.APP_LOG_PATH, datefmt='%Y-%m-%d %H:%M:%S')
 
 
 app = Flask(__name__)
-app.wsgi_app = Middleware(app.wsgi_app)
-# 跨域
+# # 跨域
 # from flask_cors import CORS
 # CORS(
 #     app,
@@ -46,7 +45,7 @@ for url_prefix, blueprint in controller.blueprint.items():
 def before_call():
     ...
     # 若 return ，则直接返回响应
-    pass
+    return Middleware()()
 
 
 @app.after_request

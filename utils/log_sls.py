@@ -13,13 +13,16 @@ import time
 from typing import Union
 import threading
 
+import flask
+
 from utils import util, context, thread_func
 from dao import mongoDB, esDB
+import config
 
 
 class LogSLS:
 
-    __project = 'template'      # 当前项目。每个项目应该唯一，数据会存储至对应的集合中。
+    __project = 'backend'      # 当前项目。每个项目应该唯一，数据会存储至对应的集合中。
     __lock = threading.RLock()
 
     def __new__(cls, *args, **kwargs):
@@ -49,8 +52,9 @@ class LogSLS:
         ...
 
     def save(self, data):
-        thread_func.submit(self.save_mongo, copy.deepcopy(data), use_pool=False)
-        thread_func.submit(self.save_es, copy.deepcopy(data), use_pool=False)
+        if config.INSERT_SLS:
+            thread_func.submit(self.save_mongo, copy.deepcopy(data), use_pool=False)
+            thread_func.submit(self.save_es, copy.deepcopy(data), use_pool=False)
         ...
 
     def __sls(self, mod: str, level: str, content: Union[str, int], **kwargs):
@@ -79,7 +83,14 @@ class LogSLS:
             }
             log_content.update(kwargs)
 
+            try:
+                require_id = flask.g.get('metadata', {}).get('require_id')
+            except:
+                require_id = None
             task_id = context.get_args('task_id', None)
+
+            if require_id:
+                log_content['require_id'] = require_id
             if task_id:
                 log_content['task_id'] = task_id
 

@@ -4,11 +4,10 @@
 # FileName:
 
 import json
-import logging
 
 from dao import poolDB, db, db_exception
 import config
-from utils import DataEncoder
+from utils import DataEncoder, log_sls
 
 
 class Mysql:
@@ -168,7 +167,7 @@ def logging_sql(sql, args, key: str = None):
     if key is not None:
         kwargs['key'] = key
 
-    logging.info(f'sql: {sql}')
+    log_sls.info('Mysql', '执行sql', sql=sql)
 
 
 if __name__ == "__main__":

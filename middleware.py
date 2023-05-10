@@ -6,49 +6,69 @@
 import random
 import time
 
-from werkzeug.wrappers import Request
+import flask
 
 from utils import log_sls, util
 
 
 class Middleware:
 
-    def __init__(self, app):
-        self.app = app
+    def __init__(self):
+        flask.g.metadata = {}
+        pass
 
-    def __call__(self, environ, start_response):
-        _request = Request(environ)
-
+    def __call__(self):
+        """
+        请求前置处理
+        :return: 若返回，则直接返回响应
+        """
         now = time.time()
-        environ['metadata.start_time'] = now
-        environ['metadata.require_id'] = str(int(now*1000)) + ''.join([str(random.randint(1, 10)) for _ in range(6)])
+        require_id = str(int(now*1000)) + ''.join([str(random.randint(1, 10)) for _ in range(6)])
 
-        log_sls.info(
-            'Middleware', '接收请求',
-            start_time=util.time2str(now),
-            base_url=_request.base_url,
-            uri=_request.path,
-            method=_request.method,
-            user_agent=_request.user_agent,
-            ip=_request.headers.get('X-Forwarded-For', _request.remote_addr),
-            args=load_request_args(_request),
-        )
+        def update_request():
+            """请求request的预制处理"""
+            res = {}
+            with flask.current_app.app_context():
+                flask.request.environ['metadata.start_time'] = now
+                flask.request.environ['metadata.require_id'] = require_id
 
-        return self.app(environ, start_response)
+                res['sls'] = {
+                    'start_time': util.time2str(now),
+                    'base_url': flask.request.base_url,
+                    'uri': flask.request.path,
+                    'method': flask.request.method,
+                    'user_agent': flask.request.user_agent,
+                    'ip': flask.request.headers.get('X-Forwarded-For', flask.request.remote_addr),
+                    'args': load_request_args(flask.request),
+                }
+            return res
+
+        result = update_request()
+        flask.g.metadata['require_id'] = require_id
+
+        log_sls.info('Middleware', '接收请求', **result.get('sls', {}))
 
 
-def load_request_args(request):
+def load_request_args(request_):
     result = {
         'param': None,
+        'form': None,
         'json': None,
     }
-    if request.is_json:
-        result['json'] = request.json
-    param_keys = request.args.keys()
-    result['param'] = {} if param_keys else result['param']
-    for key in param_keys:
-        result['param'].update({
-            key: request.args.getlist(key)
-        })
+
+    if request_.is_json:
+        result['json'] = request_.json
+
+    if request_.args.keys():
+        result['param'] = {
+            key: request_.args.getlist(key)
+            for key in request_.args.keys()
+        }
+
+    if request_.form.keys():
+        result['form'] = {
+            key: request_.form.getlist(key)
+            for key in request_.form.keys()
+        }
 
     return result
