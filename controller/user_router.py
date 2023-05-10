@@ -20,7 +20,7 @@ def register():
 
 @user_route.route('login', methods=['POST'])
 def login():
-    query = request.json
+    query = request.form
     res = user_logic.login(query)
     return jsonify(res)
 

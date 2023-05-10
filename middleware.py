@@ -8,6 +8,7 @@ import time
 
 import flask
 
+from model.bean import user_util
 from utils import log_sls, util
 
 
@@ -32,6 +33,9 @@ class Middleware:
                 flask.request.environ['metadata.start_time'] = now
                 flask.request.environ['metadata.require_id'] = require_id
 
+                token = flask.request.headers.get('token')
+                flask.request.environ['metadata.user'] = user = user_util.get_user_by_token(token)
+
                 res['sls'] = {
                     'start_time': util.time2str(now),
                     'base_url': flask.request.base_url,
@@ -39,6 +43,7 @@ class Middleware:
                     'method': flask.request.method,
                     'user_agent': flask.request.user_agent,
                     'ip': flask.request.headers.get('X-Forwarded-For', flask.request.remote_addr),
+                    'user': user.uid,
                     'args': load_request_args(flask.request),
                 }
             return res
