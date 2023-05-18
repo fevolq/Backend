@@ -61,7 +61,7 @@ def login(query):
     email = query['email']
     password = query['password']
 
-    record_user = User(email=email)
+    record_user = User(email=email, fill_permission=False)
     if record_user.uid is None:
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
     if not user_util.check_pwd(password, record_user.salt, record_user.bcrypt_str):
@@ -74,6 +74,11 @@ def login(query):
     user_util.insert_token(token, user_info)
 
     return {'code': StatusCode.success, 'token': token, 'info': user_info}
+
+
+def info():
+    current_user: User = request.environ['metadata.user']
+    return {'code': StatusCode.success, 'data': current_user.ui_info()}
 
 
 def update(query):
@@ -111,7 +116,7 @@ def update(query):
     return {'code': StatusCode.success}
 
 
-def info(query):
+def users_info(query):
     uid_arr = query.getlist('uids')
     uname_arr = query.getlist('unames')
     email_arr = query.getlist('emails')
