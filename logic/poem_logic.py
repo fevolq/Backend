@@ -15,12 +15,15 @@ def poem(query):
 
     table = 'poem'
     cols = ['author', 'dynasty', 'title', 'content', 'id']
-    sql = f'SELECT {", ".join(cols)} FROM {table} [WHERE] ORDER BY rand() LIMIT 1'
+    sql = f'SELECT {", ".join(cols)} FROM {table} [WHERE] ORDER BY rand() LIMIT %s'
     args = []
     where_str = ''
     if query.get('id', None):
         where_str = 'WHERE id <> %s'
         args.append(query['id'])
+
+    size = query['size'] if query.get('size', None) else 1
+    args.append(size)
     sql = sql.replace('[WHERE]', where_str)
     resp = mysqlDB.execute(sql, args)
 
@@ -28,9 +31,9 @@ def poem(query):
         res['code'] = status_code.StatusCode.failure,
         res['msg'] = '失败'
     else:
-        result = resp['result'][0]
-        result['content'] = json.loads(result['content'])
-        res['data'] = result
+        for result in resp['result']:
+            result['content'] = json.loads(result['content'])
+        res['data'] = resp['result']
 
     return res
 
@@ -42,12 +45,15 @@ def witticism(query):
 
     table = 'witticism'
     cols = ['content', 'id']
-    sql = f'SELECT {", ".join(cols)} FROM {table} [WHERE] ORDER BY rand() LIMIT 1'
+    sql = f'SELECT {", ".join(cols)} FROM {table} [WHERE] ORDER BY rand() LIMIT %s'
     args = []
     where_str = ''
     if query.get('id', None):
         where_str = 'WHERE id <> %s'
         args.append(query['id'])
+
+    size = query['size'] if query.get('size', None) else 1
+    args.append(size)
     sql = sql.replace('[WHERE]', where_str)
     resp = mysqlDB.execute(sql, args)
 
@@ -55,6 +61,6 @@ def witticism(query):
         res['code'] = status_code.StatusCode.failure,
         res['msg'] = '失败'
     else:
-        res['data'] = resp['result'][0]
+        res['data'] = resp['result']
 
     return res
