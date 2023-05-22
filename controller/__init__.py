@@ -5,9 +5,11 @@
 
 from . import (
     template_router,
+    poem_router,
 )
 
 blueprint = {
     # url_prefix: blueprint
     'template': template_router.template_route,
+    'poem': poem_router.poem_route,
 }
