@@ -46,7 +46,7 @@ def login(query):
     password = query['password']
 
     record_user = User(email=email, fill_permission=False)
-    if record_user.uid is None:
+    if not record_user.uid:
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
     if not user_util.check_pwd(password, record_user.salt, record_user.bcrypt_str):
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
@@ -57,6 +57,15 @@ def login(query):
     user_info = record_user.ui_info()
     user_util.insert_token(token, user_info)
 
+    return {'code': StatusCode.success, 'token': token, 'info': user_info}
+
+
+# 临时账户
+def temp_account(hash_value):
+    record_user = User(uid=constant.TempUID, fill_permission=False)
+    token = user_util.gen_token(hash_value)
+    user_info = record_user.ui_info()
+    user_util.insert_token(token, user_info, 1)
     return {'code': StatusCode.success, 'token': token, 'info': user_info}
 
 

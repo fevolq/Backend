@@ -12,6 +12,7 @@ from functools import wraps
 import bcrypt
 from flask import request
 
+import constant
 from dao import redisDB
 from model.user import User
 from status_code import StatusCode
@@ -61,15 +62,15 @@ def gen_token(s) -> str:
     return token
 
 
-def insert_token(token, user_info, is_update=False):
+def insert_token(token, user_info, is_update=False, ex=constant.TokenExpire):
     key = f'user:token:{token}'
-    redisDB.execute('set', key, json.dumps(user_info), ex=60*60*24*7, nx=is_update)
+    redisDB.execute('set', key, json.dumps(user_info), ex=60*60*24*ex, nx=is_update)
 
 
 def get_user_by_token(token):
     """
     token为空，则不查询用户；
-    token存在，若失效，则uid=None；若存在，则为正常情况
+    token存在，若失效，则uid=-1；若存在，则为正常情况
     """
     if token is None:
         return User()
@@ -77,11 +78,12 @@ def get_user_by_token(token):
     key = f'user:token:{token}'
     res = redisDB.execute('get', key)['result']
     if not res:
-        uid = None
+        uid = constant.InvalidUID
     else:
         user_info = json.loads(res)
-        insert_token(token, user_info, is_update=True)      # 更新过期时间
         uid = user_info.get('uid')
+        ex = constant.TokenExpire if uid != constant.TempUID else 1
+        insert_token(token, user_info, is_update=True, ex=ex)      # 更新过期时间
     return User(uid=uid)
 
 
@@ -90,7 +92,7 @@ def is_login(func):
     def decorated_func(*args, **kwargs):
         user = request.environ['metadata.user']
 
-        if user.login:
+        if user.is_login():
             return {'code': StatusCode.unauthorized, 'msg': 'User not logged in'}
 
         return func(*args, **kwargs)

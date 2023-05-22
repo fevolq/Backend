@@ -20,3 +20,11 @@ SuperAdminRoleID = 'a9e70123e412eda6e247f8656d750b98'
 AdminRoleID = '6a14327901f0b8101d9d5a09dd0ff7cd'
 # 默认角色
 DefaultRoleID = '75dba8d8b1fe0734d33f46800fb619c3'
+
+# 无效用户ID
+InvalidUID = 0
+# 临时用户ID
+TempUID = None
+
+# token有效期（天）
+TokenExpire = 7
