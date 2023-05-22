@@ -13,7 +13,13 @@ from utils import dict_to_obj, pools
 
 class User:
 
-    def __init__(self, uid=None, email=None, fill_permission=True):
+    def __init__(self, uid=constant.InvalidUID, email=None, fill_permission=True):
+        """
+
+        :param uid:
+        :param email:
+        :param fill_permission:
+        """
         # 基础元素
         self.uid = uid
         self.name = None
@@ -28,9 +34,10 @@ class User:
 
         # 衍生元素
         self.login = False
+        self.temp = False
 
         # 权限元素
-        self.roles: List[Role] = []
+        self.roles: List[Role] = [Role(constant.DefaultRoleID, fill_permission=False)]      # 加入默认角色
         self.permissions = []
 
         self._init(fill_permission)
@@ -38,22 +45,28 @@ class User:
     def _init(self, fill_permission=True):
         cols = ['uid', 'name', 'email', 'salt', 'bcrypt_str', 'is_ban', 'create_at', 'update_at', 'update_by', 'remark']
         condition = {}
-        if self.uid is not None:
+        if self.uid:
             condition['uid'] = {'=': self.uid}
         if self.email is not None:  # 登录校验
             condition['email'] = {'=': self.email}
-        if not condition:
-            # condition = {'id': {'=': -1}}
-            return
+        if condition:
+            info_sql, info_args = sql_builder.gen_select_sql(constant.UserTable, cols, condition=condition, limit=1)
+            res = mysqlDB.execute(info_sql, info_args, log_key='用户信息')['result']
+            if not res:
+                return
+            data = res[0]
+            self.login = True
+        else:
+            if self.uid == constant.InvalidUID:
+                return
+            else:
+                self.temp = True
+                data = {
+                    'uid': constant.TempUID,
+                    'name': '临时用户',
+                }
 
-        info_sql, info_args = sql_builder.gen_select_sql(constant.UserTable, cols, condition=condition, limit=1)
-        res = mysqlDB.execute(info_sql, info_args, log_key='用户信息')['result']
-        if not res:
-            return
-
-        dict_to_obj.set_obj_attr(self, res[0])
-        self.login = True
-
+        dict_to_obj.set_obj_attr(self, data)
         if fill_permission:
             self.load_permission()
 
@@ -66,7 +79,7 @@ class User:
         if roles_res:
             args = [[(role_data['role_id'],)] for role_data in roles_res]
             roles = pools.execute_event(lambda role_id: Role(role_id, fill_permission=False), args)
-            self.roles = list(filter(lambda role: role.name, roles))
+            self.roles.extend(list(filter(lambda role: role.name, roles)))
 
         if self.is_admin():     # 管理员不用再查询权限
             return
@@ -110,6 +123,12 @@ class User:
     def is_admin(self, only_admin=False):
         check_roles = [constant.AdminRoleID] if only_admin else [constant.SuperAdminRoleID, constant.AdminRoleID]
         return set(check_roles) & set([role.role_id for role in self.roles])
+
+    def is_login(self):
+        return self.login
+
+    def is_temp(self):
+        return self.is_temp()
 
     @classmethod
     def user_is_super_admin(cls, uid):

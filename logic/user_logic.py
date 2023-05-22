@@ -18,7 +18,6 @@ def register(query):
     email = query['email']
     password = query['password']
     remark = query.get('remark', None)
-    role_id = query.get('role_id', constant.DefaultRoleID)
     if User.has_register(email):
         return {'code': StatusCode.is_conflict, 'msg': 'Email address has registered'}
 
@@ -38,22 +37,7 @@ def register(query):
     }
     sql, args = sql_builder.gen_insert_sql(constant.UserTable, row)
 
-    role_ids = [role_id]
-    if role_id != constant.DefaultRoleID:
-        # 用户永远有默认角色，避免删除某角色导致用户变成无角色状态
-        role_ids.insert(0, constant.DefaultRoleID)
-    user_role_rows = [{
-        'uid': uid,
-        'role_id': role_id,
-        'update_at': current_time,
-        'update_by': '',
-    } for role_id in role_ids]
-    role_sql, role_args = sql_builder.gen_insert_sqls(constant.UserRoleTable, user_role_rows)
-
-    res = mysqlDB.execute_many([
-        {'sql': sql, 'args': args},
-        {'sql': role_sql, 'args': role_args},
-    ], log_key='注册用户')
+    res = mysqlDB.execute(sql, args, log_key='注册用户')
     return {'code': StatusCode.success}
 
 
@@ -62,7 +46,7 @@ def login(query):
     password = query['password']
 
     record_user = User(email=email, fill_permission=False)
-    if record_user.uid is None:
+    if not record_user.uid:
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
     if not user_util.check_pwd(password, record_user.salt, record_user.bcrypt_str):
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
@@ -73,6 +57,15 @@ def login(query):
     user_info = record_user.ui_info()
     user_util.insert_token(token, user_info)
 
+    return {'code': StatusCode.success, 'token': token, 'info': user_info}
+
+
+# 临时账户
+def temp_account(hash_value):
+    record_user = User(uid=constant.TempUID, fill_permission=False)
+    token = user_util.gen_token(hash_value)
+    user_info = record_user.ui_info()
+    user_util.insert_token(token, user_info, 1)
     return {'code': StatusCode.success, 'token': token, 'info': user_info}
 
 
