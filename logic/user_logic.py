@@ -18,7 +18,6 @@ def register(query):
     email = query['email']
     password = query['password']
     remark = query.get('remark', None)
-    role_id = query.get('role_id', constant.DefaultRoleID)
     if User.has_register(email):
         return {'code': StatusCode.is_conflict, 'msg': 'Email address has registered'}
 
@@ -38,22 +37,7 @@ def register(query):
     }
     sql, args = sql_builder.gen_insert_sql(constant.UserTable, row)
 
-    role_ids = [role_id]
-    if role_id != constant.DefaultRoleID:
-        # 用户永远有默认角色，避免删除某角色导致用户变成无角色状态
-        role_ids.insert(0, constant.DefaultRoleID)
-    user_role_rows = [{
-        'uid': uid,
-        'role_id': role_id,
-        'update_at': current_time,
-        'update_by': '',
-    } for role_id in role_ids]
-    role_sql, role_args = sql_builder.gen_insert_sqls(constant.UserRoleTable, user_role_rows)
-
-    res = mysqlDB.execute_many([
-        {'sql': sql, 'args': args},
-        {'sql': role_sql, 'args': role_args},
-    ], log_key='注册用户')
+    res = mysqlDB.execute(sql, args, log_key='注册用户')
     return {'code': StatusCode.success}
 
 

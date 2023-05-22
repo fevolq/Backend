@@ -30,7 +30,7 @@ class User:
         self.login = False
 
         # 权限元素
-        self.roles: List[Role] = []
+        self.roles: List[Role] = [Role(constant.DefaultRoleID, fill_permission=False)]      # 加入默认角色
         self.permissions = []
 
         self._init(fill_permission)
@@ -66,7 +66,7 @@ class User:
         if roles_res:
             args = [[(role_data['role_id'],)] for role_data in roles_res]
             roles = pools.execute_event(lambda role_id: Role(role_id, fill_permission=False), args)
-            self.roles = list(filter(lambda role: role.name, roles))
+            self.roles.extend(list(filter(lambda role: role.name, roles)))
 
         if self.is_admin():     # 管理员不用再查询权限
             return
