@@ -42,10 +42,19 @@ class User:
 
         self._init(fill_permission)
 
+    def is_valid_uid(self):
+        return self.uid not in [constant.InvalidUID, constant.TempUID]
+
+    def __gen_temp_userinfo(self):
+        return {
+            'uid': constant.TempUID,
+            'name': '临时用户',
+        }
+
     def _init(self, fill_permission=True):
         cols = ['uid', 'name', 'email', 'salt', 'bcrypt_str', 'is_ban', 'create_at', 'update_at', 'update_by', 'remark']
         condition = {}
-        if self.uid:
+        if self.is_valid_uid():
             condition['uid'] = {'=': self.uid}
         if self.email is not None:  # 登录校验
             condition['email'] = {'=': self.email}
@@ -61,10 +70,7 @@ class User:
                 return
             else:
                 self.temp = True
-                data = {
-                    'uid': constant.TempUID,
-                    'name': '临时用户',
-                }
+                data = self.__gen_temp_userinfo()
 
         dict_to_obj.set_obj_attr(self, data)
         if fill_permission:
@@ -129,6 +135,9 @@ class User:
 
     def is_temp(self):
         return self.is_temp()
+
+    def is_invalid(self):
+        return self.uid == constant.InvalidUID
 
     @classmethod
     def user_is_super_admin(cls, uid):
