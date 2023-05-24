@@ -136,6 +136,9 @@ class User:
     def is_temp(self):
         return self.is_temp()
 
+    def is_invalid(self):
+        return self.uid == constant.InvalidUID
+
     @classmethod
     def user_is_super_admin(cls, uid):
         """

@@ -17,3 +17,5 @@ USE_THREAD = True
 INSERT_SLS = True
 
 LOAD_PATCH = True
+
+NOT_CHECK_TOKEN_API = ('/user/register', '/user/login', '/user/temp')
