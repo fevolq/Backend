@@ -5,9 +5,11 @@
 
 from . import (
     template_router,
+    dashboard_router,
 )
 
 blueprint = {
     # url_prefix: blueprint
     'template': template_router.template_route,
+    'dashboard': dashboard_router.dashboard_route,
 }
