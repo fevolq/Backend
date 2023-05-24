@@ -46,7 +46,7 @@ def login(query):
     password = query['password']
 
     record_user = User(email=email, fill_permission=False)
-    if not record_user.uid:
+    if not record_user.is_valid_uid():
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
     if not user_util.check_pwd(password, record_user.salt, record_user.bcrypt_str):
         return {'code': StatusCode.is_conflict, 'msg': 'error password'}
@@ -109,12 +109,14 @@ def update(query):
     return {'code': StatusCode.success}
 
 
-def users_info(query):
-    uid_arr = query.getlist('uids')
-    uname_arr = query.getlist('unames')
-    email_arr = query.getlist('emails')
+def user_list(query):
     page = int(query.get('page', 1))
     page_size = int(query.get('page_size', 20))
+    filter_data = query.get('filter', {})
+    uid_arr = filter_data.get('uids', [])
+    uname_arr = filter_data.get('unames', [])
+    email_arr = filter_data.get('emails', [])
+    is_ban = filter_data.get('is_ban', None)
 
     conditions = {}
     if uid_arr:
@@ -123,6 +125,8 @@ def users_info(query):
         conditions['name'] = {'IN': uname_arr}
     if email_arr:
         conditions['email'] = {'IN': email_arr}
+    if is_ban is not None:
+        conditions['is_ban'] = {'=': int(is_ban)}
     sql, args = sql_builder.gen_select_sql(constant.UserTable, ['uid'], condition=conditions,
                                            order_by=[('id', 'asc')], limit=page_size, offset=(page - 1)*page_size)
     res = mysqlDB.execute(sql, args)['result']
@@ -143,7 +147,7 @@ def ban(query):
 
     # TODO：冲突校验
 
-    update_cols = {'is_ban': is_ban, 'update_at': current_time, 'update_by': current_user.email}
+    update_cols = {'is_ban': int(is_ban), 'update_at': current_time, 'update_by': current_user.email}
     sql, args = sql_builder.gen_update_sql(constant.UserTable, update_cols, conditions={'uid': {'IN': uid_arr}})
     res = mysqlDB.execute(sql, args)
     return {'code': StatusCode.success}

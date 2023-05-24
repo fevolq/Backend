@@ -55,9 +55,9 @@ def update():
 # 查询用户
 @user_route.route('list', methods=['GET'])
 @user_util.is_admin
-def users_info():
+def user_list():
     query = request.args
-    res = user_logic.users_info(query)
+    res = user_logic.user_list(query)
     return jsonify(res)
 
 
