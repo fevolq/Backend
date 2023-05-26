@@ -9,6 +9,7 @@ from . import (
     role_router,
     permission_router,
     dashboard_router,
+    poem_router,
 )
 
 blueprint = {
@@ -18,4 +19,5 @@ blueprint = {
     'role': role_router.role_route,
     'permission': permission_router.permission_route,
     'dashboard': dashboard_router.dashboard_route,
+    'poem': poem_router.poem_route,
 }
