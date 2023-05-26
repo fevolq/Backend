@@ -8,7 +8,10 @@ import time
 
 import flask
 
+from model.bean import user_util
+from status_code import StatusCode
 from utils import log_sls, util
+import config
 
 
 class Middleware:
@@ -32,21 +35,39 @@ class Middleware:
                 flask.request.environ['metadata.start_time'] = now
                 flask.request.environ['metadata.require_id'] = require_id
 
-                res['sls'] = {
-                    'start_time': util.time2str(now),
+                token = flask.request.headers.get('token')
+                flask.request.environ['metadata.user'] = user = user_util.get_user_by_token(token)
+
+                res.update({
                     'base_url': flask.request.base_url,
                     'uri': flask.request.path,
                     'method': flask.request.method,
                     'user_agent': flask.request.user_agent,
                     'ip': flask.request.headers.get('X-Forwarded-For', flask.request.remote_addr),
                     'args': load_request_args(flask.request),
-                }
+                    'user': user,
+                })
             return res
 
         result = update_request()
         flask.g.metadata['require_id'] = require_id
 
-        log_sls.info('Middleware', '接收请求', **result.get('sls', {}))
+        log_sls.info('Middleware', '接收请求', **{
+            'start_time': util.time2str(now),
+            'base_url': result['base_url'],
+            'uri': result['uri'],
+            'method': result['method'],
+            'user_agent': result['user_agent'],
+            'ip': result['ip'],
+            'args': result['args'],
+            'user': result['user'].uid,
+        })
+
+        if result['user'].is_ban:
+            log_sls.info('Middleware', '封禁用户访问')
+            return {'code': StatusCode.forbidden, 'msg': '系统升级中...'}
+        elif result['uri'] not in config.NOT_CHECK_TOKEN_API and result['user'].is_invalid():
+            return {'code': StatusCode.forbidden, 'msg': '请重试！'}
 
 
 def load_request_args(request_):
