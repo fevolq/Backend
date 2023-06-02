@@ -49,13 +49,29 @@ class ChartProcessor:
     def get_chart(self, chart_name):
         self.init_charts(chart_name)
         self._dataset_p = DatasetProcessor(set([chart.get_dataset_from_conf() for _, chart in self._charts.items()]))
+        result = {
+            'data': [],
+            'cols': [],
+        }
         if self._charts.get(chart_name, None):
-            self.load_one_chart(self._charts[chart_name])
+            chart = self._charts[chart_name]
+            self.load_one_chart(chart)
+
+            df = chart.df
+            cols = {**chart.rows, **chart.cols}
+
+            result['cols'] = [{
+                'name': col.alias,
+                'label': col.label,
+                'is_dim': col.is_dim,
+            } for _, col in cols.items() if col.visibility.upper() == 'VISIBLE']
+            data_cols = [col.field.alias for _, col in cols.items() if col.visibility.upper() in ('INVISIBLE', 'VISIBLE')]
+            df = df.loc[:, data_cols]
+            result['data'] = df.to_dict(orient='records')
+
         else:
             p_config = self._config[chart_name]
             # TODO：聚合视图
             pass
 
-        return {
-
-        }
+        return result

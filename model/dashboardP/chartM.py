@@ -226,53 +226,37 @@ class Chart:
 class ChartCol:
 
     def __init__(self, config):
-        self.name = config['field']
         self._config = config
 
-        self.label = None
-        self.show = True        # 是否展示。可能只是过渡字段
+        self.__label = self._config.get('label', '')
+        self.__field = self._config.get('field', '')
+        self.visibility = self._config.get('visibility', 'VISIBLE')        # 是否展示。VISIBLE：查询并展示；INVISIBLE：查询并传递数据给UI，但不展示；GONE: 只查询，不传递给UI，也不展示，一般用于被依赖的列
 
         set_obj_attr(self, self._config)
-        self.__field: Field = None
-        self.__is_dim: bool = False
-        self.__order: bool = None       # True: DESC, False: ASC
-        self.__filter_m: Filter = None
-
-    @property
-    def field(self):
-        return self.__field
+        self.field: Field = None
+        self.is_dim: bool = False
+        self.order: bool = None       # True: DESC, False: ASC
+        self.filter_m: Filter = None
 
     def set_field(self, dataset: Dataset):
-        if self.name not in dataset.fields:
-            if self.name.find('.') > 0 and f'{self.name.split(".")[0]}.*' in dataset.fields:
-                dataset.expand_field(mod='*', col_name=self.name)
+        if self.__field not in dataset.fields:
+            if self.__field.find('.') > 0 and f'{self.__field.split(".")[0]}.*' in dataset.fields:
+                dataset.expand_field(mod='*', col_name=self.__field)
             else:
-                raise Exception(f'dataset[{dataset.name}] fields not found col: {self.name}')
-        self.__field = dataset.fields[self.name]
+                raise Exception(f'dataset[{dataset.name}] fields not found col: {self.__field}')
+        self.field = dataset.fields[self.__field]
 
     @property
-    def is_dim(self):
-        return self.__is_dim
-
-    @is_dim.setter
-    def is_dim(self, val: bool):
-        self.__is_dim = val
+    def name(self):
+        return self.__field
 
     @property
-    def order(self):
-        return self.__order
-
-    @order.setter
-    def order(self, val: bool):
-        self.__order = val
+    def label(self):
+        return self.__label or self.field.label if self.field else self.__label
 
     @property
-    def filter_m(self):
-        return self.__filter_m
-
-    @filter_m.setter
-    def filter_m(self, val):
-        self.__filter_m = val
+    def alias(self):
+        return self.field.alias if self.field else self.__field
 
     def __repr__(self):
-        return f'{self.name}[{self.label}]'
+        return f'{self.__field}[{self.__label}]'

@@ -38,7 +38,7 @@ class SqlGenerator:
         select = dict([('value', '')])
 
         select['cols'] = cols = {**self.__chart.rows, **self.__chart.cols}
-        value = ', '.join([f'{self.__chart.dataset.get_field_value_in_sql(chart_col.field)} AS {chart_col.field.alias}'
+        value = ', '.join([f'{self.__chart.dataset.get_field_value_in_sql(chart_col.field)} AS {chart_col.alias}'
                            for _, chart_col in cols.items()])
         select['value'] = f'SELECT {value}'
 
