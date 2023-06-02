@@ -48,6 +48,20 @@ def gen_wheres_part(table_name: str, conditions: dict, args: list = None):
                 where_strs.append(f"{table_str}{field} like %s")
                 condition_op_value = f'%{condition_op_value}%'
                 match = True
+            elif op == 'NOT LIKE':
+                where_strs.append(f"{table_str}{field} not like %s")
+                condition_op_value = f'%{condition_op_value}%'
+                match = True
+            elif op == 'LIKES':
+                tmp_where_str = f"{table_str}{field} like %s"
+                where_strs.append(" OR ".join([tmp_where_str] * len(condition_op_value)))
+                condition_op_value = [f'%{value}%' for value in condition_op_value]
+                match = True
+            elif op == 'NOT LIKES':
+                tmp_where_str = f"{table_str}{field} not like %s"
+                where_strs.append(" OR ".join([tmp_where_str] * len(condition_op_value)))
+                condition_op_value = [f'%{value}%' for value in condition_op_value]
+                match = True
             elif op == 'IN':
                 condition_value_len = len(condition_op_value)
                 if condition_value_len == 0:
@@ -63,8 +77,10 @@ def gen_wheres_part(table_name: str, conditions: dict, args: list = None):
                 where_strs.append(f"{table_str}{field} NOT IN ({','.join(['%s'] * condition_value_len)})")
                 match = True
             elif op == 'BETWEEN':
-                condition_value_len = len(condition_op_value)
                 where_strs.append(f"{table_str}`{field}` BETWEEN %s AND %s")
+                match = True
+            elif op == 'NOT BETWEEN':
+                where_strs.append(f"{table_str}`{field}` NOT BETWEEN %s AND %s")
                 match = True
             else:
                 raise Exception(f'{op} 模式暂不支持')
