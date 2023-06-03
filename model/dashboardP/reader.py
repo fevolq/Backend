@@ -5,6 +5,25 @@
 
 import json
 import os
+from functools import wraps
+
+from model.bean import cache
+from utils import util
+
+
+def with_cache(name):
+    def do(func):
+        @wraps(func)
+        def decorate(*args, **kwargs):
+            if cache.get(name):
+                res = cache.get(name)
+            else:
+                res = func(*args, **kwargs)
+                cache.add(name, res)
+            return res
+
+        return decorate
+    return do
 
 
 class Reader:
@@ -13,6 +32,7 @@ class Reader:
 
     def __init__(self, name, mod: str = 'json'):
         self.names = [name] if isinstance(name, str) else name
+        self.hash_name = util.md5(str(self.names))
         self.mod = mod
 
     def __load_json(self):
@@ -22,8 +42,12 @@ class Reader:
         return content
 
     def load(self):
-        if self.mod == 'json':
-            return self.__load_json()
+        @with_cache(self.hash_name)
+        def __load():
+            if self.mod == 'json':
+                return self.__load_json()
+
+        return __load()
 
     @classmethod
     def read(cls, *args, **kwargs):
