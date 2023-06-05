@@ -10,15 +10,15 @@ from logic import dashboard_logic
 dashboard_route = Blueprint('dashboard', __name__)
 
 
-@dashboard_route.route('config', methods=['GET'])
+@dashboard_route.route('config', methods=['POST'])
 def dashboard_config():
-    query = request.args
+    query = request.json
     res = dashboard_logic.dashboard_config(query)
     return jsonify(res)
 
 
-@dashboard_route.route('chart', methods=['GET'])
+@dashboard_route.route('chart', methods=['POST'])
 def chart():
-    query = request.args
+    query = request.json
     res = dashboard_logic.chart(query)
     return jsonify(res)
