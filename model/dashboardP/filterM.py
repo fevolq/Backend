@@ -23,8 +23,9 @@ class Filter:
         self.default_exclude = False
         self.enable_expand = False   # 是否可展开
         self.default_expand = False
-        self.relate_chart = None        # 关联至视图的字段
+        self.required = False       # 是否必填
         self.extra = {}             # 直接透传至前端
+        self.relate_chart = None        # 关联至视图的字段
 
         self.label_format = "{label}"
         self.options = []
@@ -73,6 +74,7 @@ class Filter:
             'options': options,
             'sql': self.__sql,
             'extra': self.extra,
+            'required': self.required,
         }
 
     def load_query(self, filter_query):
