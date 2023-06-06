@@ -4,6 +4,7 @@
 # FileName:
 
 from dao import mysqlDB
+from exceptions import TipsException
 from .util import read
 from utils.dict_to_obj import set_obj_attr
 
@@ -23,8 +24,9 @@ class Filter:
         self.default_exclude = False
         self.enable_expand = False   # 是否可展开
         self.default_expand = False
-        self.relate_chart = None        # 关联至视图的字段
+        self.required = False       # 是否必填
         self.extra = {}             # 直接透传至前端
+        self.relate_chart = None        # 关联至视图的字段
 
         self.label_format = "{label}"
         self.options = []
@@ -73,12 +75,19 @@ class Filter:
             'options': options,
             'sql': self.__sql,
             'extra': self.extra,
+            'required': self.required,
         }
 
     def load_query(self, filter_query):
         self.__is_expand = filter_query.get('is_expand', self.__is_expand)
         self.__is_exclude = filter_query.get('is_exclude', self.__is_exclude)
         self.__values = filter_query.get('values', self.__values)
+
+        self._check_query()
+
+    def _check_query(self):
+        if self.required and self.__values is None:
+            raise TipsException(f'过滤器[{self.title}]必填')
 
     def has_effect_value(self):
         return self.values or self.is_exclude

@@ -3,7 +3,8 @@
 # CreateTime: 2022/11/28 18:52
 # FileName:
 
-from dao import poolDB, db, db_exception
+import exceptions
+from dao import poolDB, db
 import config
 
 
@@ -43,7 +44,7 @@ class Mongo:
                 res['result'] = e
                 res['success'] = False
                 if raise_error:
-                    raise db_exception.DbException(e)
+                    raise exceptions.DbException(e)
 
         return res
 
