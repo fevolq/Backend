@@ -19,7 +19,8 @@ def with_cache(name):
                 res = cache.get(name)
             else:
                 res = func(*args, **kwargs)
-                cache.add(name, res)
+                if util.is_linux():
+                    cache.add(name, res)
             return res
 
         return decorate
