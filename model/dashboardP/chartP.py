@@ -16,6 +16,7 @@ class ChartProcessor:
         self._dataset_p: DatasetProcessor = None
 
         self._charts = {}
+        self.extra = {}
 
         self.__inflate()
 
@@ -25,6 +26,7 @@ class ChartProcessor:
     def init_charts(self, chart_name):
         """根据指定的chart名称，来初始化指定的chart"""
         p_config = self._config.get(chart_name)
+        self.extra = p_config.get('extra', {})
         if not p_config:
             assert f'error chart name: {chart_name}'
 
@@ -52,6 +54,7 @@ class ChartProcessor:
         result = {
             'data': [],
             'cols': [],
+            'extra': self.extra
         }
         if self._charts.get(chart_name, None):
             chart = self._charts[chart_name]
@@ -64,10 +67,16 @@ class ChartProcessor:
                 'name': col.alias,
                 'label': col.label,
                 'is_dim': col.is_dim,
+                'extra': col.extra,
             } for _, col in cols.items() if col.visibility.upper() == 'VISIBLE']
+
             data_cols = [col.field.alias for _, col in cols.items() if col.visibility.upper() in ('INVISIBLE', 'VISIBLE')]
             df = df.loc[:, data_cols]
             result['data'] = df.to_dict(orient='records')
+
+            extra = chart.extra
+            self.extra.update(extra)
+            result['extra'] = self.extra
 
         else:
             p_config = self._config[chart_name]

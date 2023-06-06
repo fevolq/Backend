@@ -32,6 +32,7 @@ class Chart:
         self._sorts = self._config.get('sorts', [])
         self._conditions = self._config.get('conditions', {})
         self.limit = self._config.get('limit', 1000)
+        self.extra = self._config.get('extra', {})
 
         # -----------------------------加载配置---------------------------------
         self.dataset: Dataset = None
@@ -231,8 +232,8 @@ class ChartCol:
         self.__label = self._config.get('label', '')
         self.__field = self._config.get('field', '')
         self.visibility = self._config.get('visibility', 'VISIBLE')        # 是否展示。VISIBLE：查询并展示；INVISIBLE：查询并传递数据给UI，但不展示；GONE: 只查询，不传递给UI，也不展示，一般用于被依赖的列
+        self.__extra = self._config.get('extra', '')
 
-        set_obj_attr(self, self._config)
         self.field: Field = None
         self.is_dim: bool = False
         self.order: bool = None       # True: DESC, False: ASC
@@ -257,6 +258,12 @@ class ChartCol:
     @property
     def alias(self):
         return self.field.alias if self.field else self.__field
+
+    @property
+    def extra(self):
+        value = self.field.extra
+        value.update(self.__extra)
+        return value
 
     def __repr__(self):
         return f'{self.__field}[{self.__label}]'
