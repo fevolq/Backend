@@ -195,6 +195,7 @@ class Field:
         self.label = self._config.get('label', None)
         self.type = self._config.get('type', None)
         self.expr = self._config.get('expr', None)
+        self.extra = self._config.get('extra', {})
         self.__alias = self.name
 
     def __repr__(self):
