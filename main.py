@@ -13,6 +13,7 @@ import config
 from middleware import Middleware
 from utils import log_util, util
 import status_code
+import exceptions
 import controller
 
 if config.LOAD_PATCH and util.is_linux():
@@ -65,8 +66,8 @@ def error_handler(e):
     """
     logging.error(e)
     data = {
-        'code': status_code.StatusCode.failure,
-        'msg': '出现未知情况',
+        'code': code,
+        'msg': str(e),
     }
     return jsonify(data)
 

@@ -5,7 +5,8 @@
 
 import json
 
-from dao import poolDB, db, db_exception
+import exceptions
+from dao import poolDB, db
 import config
 from utils import DataEncoder, log_sls
 
@@ -53,7 +54,7 @@ class Mysql:
                 res['success'] = False
                 res['result'] = e
                 if raise_error:
-                    raise db_exception.DbException(e)
+                    raise exceptions.DbException(e)
 
         return res
 
@@ -93,7 +94,7 @@ class Mysql:
                 res['success'] = False
                 res['result'] = e
                 if raise_error:
-                    raise db_exception.DbException(e)
+                    raise exceptions.DbException(e)
 
         return res
 
