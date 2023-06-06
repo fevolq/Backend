@@ -25,7 +25,7 @@ class ChartProcessor:
 
     def init_charts(self, chart_name):
         """根据指定的chart名称，来初始化指定的chart"""
-        p_config = self._config.get(chart_name)
+        p_config = self._config[chart_name]
         self.extra = p_config.get('extra', {})
         if not p_config:
             assert f'error chart name: {chart_name}'
