@@ -15,7 +15,7 @@ def with_cache(name):
     def do(func):
         @wraps(func)
         def decorate(*args, **kwargs):
-            if cache.get(name):
+            if util.is_linux() and cache.get(name):
                 res = cache.get(name)
             else:
                 res = func(*args, **kwargs)
