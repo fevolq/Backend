@@ -5,7 +5,7 @@
 import json
 
 import status_code
-from dao import mysqlDB
+from dao import mysqlDB, sql_builder
 
 
 def poem(query):
@@ -19,11 +19,17 @@ def poem(query):
     args = []
     where_str = ''
     if query.get('id', None):
-        where_str = 'WHERE id <> %s'
-        args.append(query['id'])
+        ids = [str(item).strip() for item in str(query['id']).split(',')]
+        if len(ids) == 1:
+            where_str = 'WHERE `id` <> %s'
+            args.extend([int(item) for item in ids])
+        else:
+            where_str, where_args = sql_builder.gen_wheres_part(table, {'id': {'NOT IN': ids}})
+            where_str = f'WHERE {where_str}'
+            args.extend([int(item) for item in where_args])
 
     size = query['size'] if query.get('size', None) else 1
-    args.append(size)
+    args.append(int(size))
     sql = sql.replace('[WHERE]', where_str)
     resp = mysqlDB.execute(sql, args)
 
@@ -49,11 +55,17 @@ def witticism(query):
     args = []
     where_str = ''
     if query.get('id', None):
-        where_str = 'WHERE id <> %s'
-        args.append(query['id'])
+        ids = [str(item).strip() for item in str(query['id']).split(',')]
+        if len(ids) == 1:
+            where_str = 'WHERE `id` <> %s'
+            args.extend([int(item) for item in ids])
+        else:
+            where_str, where_args = sql_builder.gen_wheres_part(table, {'id': {'NOT IN': ids}})
+            where_str = f'WHERE {where_str}'
+            args.extend([int(item) for item in where_args])
 
     size = query['size'] if query.get('size', None) else 1
-    args.append(size)
+    args.append(int(size))
     sql = sql.replace('[WHERE]', where_str)
     resp = mysqlDB.execute(sql, args)
 
