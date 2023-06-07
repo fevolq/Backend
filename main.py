@@ -64,7 +64,9 @@ def error_handler(e):
     :param e:
     :return:
     """
-    logging.error(e)
+    logging.exception(e)
+
+    code = e.code if isinstance(e, exceptions.CustomException) else status_code.StatusCode.failure
     data = {
         'code': code,
         'msg': str(e),
