@@ -65,7 +65,7 @@ class Chart:
 
         if self.is_show:
             self.execute_sql, self.execute_args = SqlGenerator(copy.deepcopy(self)).gen()
-            data = mysqlDB.execute(self.execute_sql, self.execute_args)
+            data = mysqlDB.execute(self.execute_sql, self.execute_args, db_name=self.dataset.db)
             self.df = pd.DataFrame(data['result'])
 
     def __prepare(self):
@@ -136,7 +136,7 @@ class Chart:
 
             col: ChartCol = self.all_cols.setdefault(relate_field, ChartCol({'field': relate_field}))
             col.filter_m = one_filter
-            col.is_dim = one_filter.is_expand
+            col.is_dim = col.is_dim or one_filter.is_expand
             col.set_field(self.dataset)
 
             if one_filter.has_effect_value():

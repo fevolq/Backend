@@ -17,6 +17,7 @@ class Dataset:
 
         self.name = name
         self.title = self._config.get('title', None)
+        self.db = self._config.get('db', None)
         self.table = self._config['table']
         self.sql = self._config.get('sql', None)
         self.fields: dict = {field_name: Field(field_name, field_config)
@@ -252,4 +253,4 @@ class Join:
     def value(self):
         table = f'{self.table} AS {self.alias}' if self.alias else self.table
         field = f'`{self.name}`.`{self.field}`'
-        return f'{self.type} JOIN {table} ON {field} = `{self.root_table}`.{self.root_field}'
+        return f'{self.type} JOIN {table} ON {field} = `{self.root_table}`.`{self.root_field}`'
