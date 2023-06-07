@@ -67,9 +67,10 @@ def error_handler(e):
     logging.exception(e)
 
     code = e.code if isinstance(e, exceptions.CustomException) else status_code.StatusCode.failure
+    msg = str(e) if isinstance(e, exceptions.CustomException) else '出现异常'
     data = {
         'code': code,
-        'msg': str(e),
+        'msg': msg,
     }
     return jsonify(data)
 
