@@ -47,7 +47,7 @@ class Chart:
 
         self.execute_sql = None
         self.execute_args = None
-        self.df = None
+        self.df = pd.DataFrame()
 
     def __repr__(self):
         return f'{self._name}[{self._title}]'
@@ -55,7 +55,7 @@ class Chart:
     def get_dataset_from_conf(self):
         return self._dataset
 
-    def get_chart(self, filter_p: FilterProcessor, dataset_p: DatasetProcessor):
+    def load(self, filter_p: FilterProcessor, dataset_p: DatasetProcessor):
         self.dataset: Dataset = dataset_p.datasets[self._dataset]
         self.filters: [Filter] = filter_p.filters
 
@@ -65,7 +65,7 @@ class Chart:
 
         if self.is_show:
             self.execute_sql, self.execute_args = SqlGenerator(copy.deepcopy(self)).gen()
-            data = mysqlDB.execute(self.execute_sql, self.execute_args)
+            data = mysqlDB.execute(self.execute_sql, self.execute_args, db_name=self.dataset.db)
             self.df = pd.DataFrame(data['result'])
 
     def __prepare(self):
@@ -136,13 +136,13 @@ class Chart:
 
             col: ChartCol = self.all_cols.setdefault(relate_field, ChartCol({'field': relate_field}))
             col.filter_m = one_filter
-            col.is_dim = one_filter.is_expand
+            col.is_dim = col.is_dim or one_filter.is_expand
             col.set_field(self.dataset)
 
             if one_filter.has_effect_value():
                 self.conditions[col] = one_filter.get_condition()
 
-    def get_dim_col(self):
+    def get_dim_cols(self):
         cols: {str: ChartCol} = {col_name: col for col_name, col in self.all_cols.items() if col.is_dim}
         return cols
 
@@ -232,6 +232,8 @@ class ChartCol:
         self.__label = self._config.get('label', '')
         self.__field = self._config.get('field', '')
         self.visibility = self._config.get('visibility', 'VISIBLE')        # 是否展示。VISIBLE：查询并展示；INVISIBLE：查询并传递数据给UI，但不展示；GONE: 只查询，不传递给UI，也不展示，一般用于被依赖的列
+        self.__expr = self._config.get('expr', '')
+        self.__fmt = self._config.get('fmt', '')            # 值的格式化。.2f: 保留两位小数；.2%: 保留两位小数的百分比
         self.__extra = self._config.get('extra', '')
 
         self.field: Field = None
@@ -264,6 +266,14 @@ class ChartCol:
         value = self.field.extra
         value.update(self.__extra)
         return value
+
+    @property
+    def expr(self):
+        return self.__expr
+
+    @property
+    def fmt(self):
+        return self.__fmt
 
     def __repr__(self):
         return f'{self.__field}[{self.__label}]'

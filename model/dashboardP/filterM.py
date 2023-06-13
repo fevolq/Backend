@@ -102,7 +102,7 @@ class Filter:
             op = '=' if not self.is_exclude else '!='
         elif self.type == 'multi':
             op = 'IN' if not self.is_exclude else 'NOT IN'
-        elif self.type == 'range':
+        elif self.type == 'range' or self.type == 'daterange':
             op = 'BETWEEN' if not self.is_exclude else 'NOT BETWEEN'
 
         return {op: self.values}

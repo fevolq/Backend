@@ -80,7 +80,7 @@ class SqlGenerator:
 
     def __gen_group_by(self):
         group_by = dict([('value', '')])
-        group_by['cols'] = cols = self.__chart.get_dim_col()
+        group_by['cols'] = cols = self.__chart.get_dim_cols()
         value = ', '.join([self.__chart.dataset.get_field_value_in_sql(chart_col.field) for _, chart_col in cols.items()])
         if cols:
             group_by['value'] = f'GROUP BY {value}'
