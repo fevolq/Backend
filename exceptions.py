@@ -25,7 +25,7 @@ class DbException(CustomException):
         self.code = StatusCode.failure
 
     def __str__(self):
-        return self.message
+        return '异常'
 
 
 class TipsException(CustomException):
