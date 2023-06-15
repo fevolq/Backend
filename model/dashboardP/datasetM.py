@@ -58,6 +58,9 @@ class Dataset:
                 return load_field_type(field.type, f'`{self.table}`.`{field.name}`')
 
         def get_expr_field(value):
+            if value == 1:      # 仅充作占位符
+                return value
+
             re_pattern = re.compile(r'\[(.*?)\]')
             groups = re_pattern.findall(value)
             for group in groups:
