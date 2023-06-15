@@ -3,6 +3,7 @@
 # CreateTime: 2023/5/26 15:43
 # FileName:
 
+import json
 import math
 import re
 
@@ -136,7 +137,7 @@ class ChartProcessor:
         df = self.reload_df(df)
 
         result = {
-            'data': df.loc[:, data_cols].to_dict(orient='records'),
+            'data': [] if df.empty else json.loads(df.loc[:, data_cols].to_json(orient='records')),
             'cols': result_cols,
             'extra': result_extra
         }
@@ -192,8 +193,6 @@ class ChartProcessor:
             try:
                 result = eval(values['expr'], locals())
             except:
-                result = '-'
-            if math.isnan(result):
                 result = '-'
             return result
 

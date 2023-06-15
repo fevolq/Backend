@@ -100,7 +100,7 @@ class Filter:
             op = 'LIKES' if not self.is_exclude else 'NOT LIKES'
         elif self.type == 'single':
             op = '=' if not self.is_exclude else '!='
-        elif self.type == 'multi':
+        elif self.type == 'multiple':
             op = 'IN' if not self.is_exclude else 'NOT IN'
         elif self.type == 'range' or self.type == 'daterange':
             op = 'BETWEEN' if not self.is_exclude else 'NOT BETWEEN'

@@ -67,7 +67,7 @@ class Dataset:
                 value = value.replace(f'[{group}]', self.get_field_value_in_sql(self.fields.get(group)))
             return value
 
-        return get_expr_field(field.expr)
+        return f'({get_expr_field(field.expr)})'
 
     def get_joins(self):
         # 所有使用到的表
