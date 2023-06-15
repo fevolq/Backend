@@ -77,10 +77,10 @@ def gen_wheres_part(table_name: str, conditions: dict, args: list = None):
                 where_strs.append(f"{table_str}{field} NOT IN ({','.join(['%s'] * condition_value_len)})")
                 match = True
             elif op == 'BETWEEN':
-                where_strs.append(f"{table_str}`{field}` BETWEEN %s AND %s")
+                where_strs.append(f"{table_str}{field} BETWEEN %s AND %s")
                 match = True
             elif op == 'NOT BETWEEN':
-                where_strs.append(f"{table_str}`{field}` NOT BETWEEN %s AND %s")
+                where_strs.append(f"{table_str}{field} NOT BETWEEN %s AND %s")
                 match = True
             else:
                 raise Exception(f'{op} 模式暂不支持')

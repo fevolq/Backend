@@ -52,6 +52,10 @@ class Chart:
     def __repr__(self):
         return f'{self._name}[{self._title}]'
 
+    @property
+    def name(self):
+        return self._name
+
     def get_dataset_from_conf(self):
         return self._dataset
 
@@ -270,6 +274,10 @@ class ChartCol:
     @property
     def expr(self):
         return self.__expr
+
+    @expr.setter
+    def expr(self, value):
+        self.__expr = value
 
     @property
     def fmt(self):

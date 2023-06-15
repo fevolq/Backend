@@ -3,11 +3,12 @@
 # CreateTime: 2023/5/26 15:43
 # FileName:
 
-from typing import List
+import math
+import re
 
 import pandas as pd
 
-from utils import pools
+from utils import pools, util
 from .chartM import Chart, ChartCol
 from .datasetP import DatasetProcessor
 from .filterP import FilterProcessor
@@ -52,6 +53,22 @@ class ChartProcessor:
     def load_one_chart(self, chart: Chart):
         chart.load(self.filter_p, self._dataset_p)
 
+    def get_all_chart_cols(self) -> {str: ChartCol}:
+        """所有视图使用到的col"""
+        cols = {}
+        for chart_name, chart in self._charts.items():
+            chart_cols = {**chart.rows, **chart.cols}
+            cols.update({f'{chart_name}.{col_name}': col for col_name, col in chart_cols.items()})
+        return cols
+
+    def get_all_file_cols(self) -> {str: ChartCol}:
+        """所有视图使用到的col。文件名.字段名: 字段"""
+        cols = {}
+        for chart_name, chart in self._charts.items():
+            chart_cols = {**chart.rows, **chart.cols}
+            cols.update({f'{chart.name}.{col_name}': col for col_name, col in chart_cols.items()})
+        return cols
+
     def get_chart(self, chart_name):
         self.init_charts(chart_name)
         self._dataset_p = DatasetProcessor(set([chart.get_dataset_from_conf() for _, chart in self._charts.items()]))
@@ -61,7 +78,7 @@ class ChartProcessor:
             self.load_one_chart(chart)
 
             df = chart.df
-            cols = {**chart.rows, **chart.cols}
+            cols = self.get_all_chart_cols()
 
             result_cols = [{
                 'name': col.alias,
@@ -81,12 +98,13 @@ class ChartProcessor:
             merge_type = p_config['merge_type']
             p_cols = p_config['cols']
 
-            pools.execute_thread(self.load_one_chart, [[(chart, )] for chart in self._charts.values()])
+            if util.is_linux():
+                pools.execute_thread(self.load_one_chart, [[(chart, )] for chart in self._charts.values()])
+            else:
+                for chart in self._charts.values():
+                    self.load_one_chart(chart)
 
-            cols = {}       # 所有视图使用到的col
-            for chart_name, chart in self._charts.items():
-                chart_cols = {**chart.rows, **chart.cols}
-                cols.update({f'{chart_name}.{col_name}': col for col_name, col in chart_cols.items()})
+            cols = self.get_all_chart_cols()
 
             # 页面展示的col
             result_cols = [{
@@ -115,7 +133,7 @@ class ChartProcessor:
 
             result_extra = self.extra
 
-        df = self.reload_df(df, list(cols.values()))
+        df = self.reload_df(df)
 
         result = {
             'data': df.loc[:, data_cols].to_dict(orient='records'),
@@ -124,19 +142,68 @@ class ChartProcessor:
         }
         return result
 
-    def reload_df(self, df, cols: List[ChartCol]) -> pd.DataFrame:
-        df = self.reload_cal_df(df, [col for col in cols if col.expr])
-        df = self.reload_fmt_df(df, [col for col in cols if col.fmt])
+    def reload_df(self, df) -> pd.DataFrame:
+        df = self.reload_cal_df(df)
+        df = self.reload_fmt_df(df,)
         return df
 
-    @staticmethod
-    def reload_cal_df(df, cols) -> pd.DataFrame:
+    def reload_cal_df(self, df) -> pd.DataFrame:
         # 对某些字段的值进行计算重载
+        # 存在循环依赖
+        re_pattern = re.compile(r'\[(.*?)\]')
+
+        chart_cols = self.get_all_chart_cols()
+        file_cols = self.get_all_file_cols()
+
+        expr_cols = [k for k, col in chart_cols.items() if col.expr]
+        cal_cols = {}
+        while expr_cols:
+            col_name = expr_cols.pop()
+            col = chart_cols[col_name]
+            groups = re_pattern.findall(col.expr)
+
+            abnormal = True
+            cal_expr_cols = set()
+            for group in groups:
+                if group.find('.') < -1:        # 仅对依赖于其他文件字段的，才进行重载计算
+                    abnormal = False
+                    break
+                col_ = file_cols[group]
+                if col_.expr:       # 当依赖字段也有依赖时，则需先计算所依赖的字段
+                    expr_cols.append(col_name)
+                    abnormal = False
+                    break
+                else:
+                    col.expr = col.expr.replace(f'[{group}]', col_.alias)
+                    cal_expr_cols.add(col_.alias)
+            if abnormal:
+                cal_cols[col.alias] = {'expr': col.expr, 'cols': cal_expr_cols}
+
+        def calculate_dataframe(row, values):
+            for col in values['cols']:
+                col_value = row.get(col, 0)
+                try:
+                    col_value = float(col_value)
+                except:
+                    col_value = 0
+                exec(f'{col}={col_value}')
+                if not col_value or math.isnan(col_value):
+                    exec(f'{col}=0')
+            try:
+                result = eval(values['expr'], locals())
+            except:
+                result = '-'
+            if math.isnan(result):
+                result = '-'
+            return result
+
+        for col_name, v in cal_cols.items():
+            df[col_name] = df.apply(lambda x: calculate_dataframe(x, v), axis=1)
         return df
 
-    @staticmethod
-    def reload_fmt_df(df: pd.DataFrame, cols: List[ChartCol]) -> pd.DataFrame:
-        # 对某些字段的值进行格式化重载
+    def reload_fmt_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        """对某些字段的值进行格式化重载"""
+        cols = [col for col in self.get_all_chart_cols().values() if col.fmt]
 
         def do(value, fmt):
             # if np.NaN(value):
