@@ -59,7 +59,7 @@ def gen_wheres_part(table_name: str, conditions: dict, args: list = None):
                 match = True
             elif op == 'NOT LIKES':
                 tmp_where_str = f"{table_str}{field} not like %s"
-                where_strs.append(" OR ".join([tmp_where_str] * len(condition_op_value)))
+                where_strs.append(" AND ".join([tmp_where_str] * len(condition_op_value)))
                 condition_op_value = [f'%{value}%' for value in condition_op_value]
                 match = True
             elif op == 'IN':

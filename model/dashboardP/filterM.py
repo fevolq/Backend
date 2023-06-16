@@ -86,7 +86,7 @@ class Filter:
         self._check_query()
 
     def _check_query(self):
-        if self.required and self.__values is None:
+        if self.required and not self.__values:
             raise TipsException(f'过滤器[{self.title}]必填')
 
     def has_effect_value(self):
