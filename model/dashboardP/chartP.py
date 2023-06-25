@@ -94,8 +94,8 @@ class ChartProcessor:
             show_cols.extend([col.ui_info() for _, col in cols.items() if col.visibility.upper() == 'VISIBLE'])
 
             # 数据字段
-            data_cols = [col.alias for _, col in cols.items() if col.visibility.upper() in ('INVISIBLE', 'VISIBLE')]
-            data_cols.extend([col.alias for col in expand_filter_cols])
+            data_cols = {col.alias: col for _, col in cols.items() if col.visibility.upper() in ('INVISIBLE', 'VISIBLE')}
+            data_cols.update({col.alias: col for col in expand_filter_cols})
 
             extra = chart.extra
             self.extra.update(extra)
@@ -121,9 +121,9 @@ class ChartProcessor:
                               if col_name in cols and cols[col_name].visibility.upper() == 'VISIBLE'])
 
             # 数据字段
-            data_cols = [col.alias for _, col in cols.items() if
-                         col.visibility.upper() in ('INVISIBLE', 'VISIBLE')]
-            data_cols.extend([col.alias for col in expand_filter_cols])
+            data_cols = {col.alias: col for _, col in cols.items() if
+                         col.visibility.upper() in ('INVISIBLE', 'VISIBLE')}
+            data_cols.update({col.alias: col for col in expand_filter_cols})
 
             df = pd.DataFrame()
             last_keys = {}
@@ -149,10 +149,23 @@ class ChartProcessor:
 
             result_extra = self.extra
 
+        # 字段混淆
+        confuse = util.Confuse()
+        confuse.hash_rows(show_cols, 'name')
+        data_cols_keys = list(data_cols.keys())
+        for col_alias in data_cols_keys:
+            col = data_cols.pop(col_alias)
+            if col.visibility.upper() == 'VISIBLE':
+                col_alias = confuse.hash_value(col_alias)
+            data_cols[col_alias] = col
+        rename_df_cols = confuse.hash_values([value for value in df.columns])
+        df.rename(columns=rename_df_cols, inplace=True)
+
         result = {
-            'data': [] if df.empty else json.loads(df.loc[:, data_cols].to_json(orient='records')),
+            'data': [] if df.empty else json.loads(df.loc[:, list(data_cols.keys())].to_json(orient='records')),
             'cols': show_cols,
-            'extra': result_extra
+            'extra': result_extra,
+            'sql': {chart_name: chart.get_sql() for chart_name, chart in self._charts.items()},     # TODO: 环境判断是否返回
         }
         return result
 

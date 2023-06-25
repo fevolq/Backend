@@ -251,6 +251,12 @@ class Chart:
             cols.append(col_config)
         return cols, kwargs
 
+    def get_sql(self):
+        sql = self.execute_sql
+        for args in self.execute_args:
+            sql = sql.replace('%s', args)
+        return sql
+
 
 class ChartCol:
 

@@ -6,10 +6,12 @@
 import datetime
 import functools
 import hashlib
+import itertools
 import logging
 import os
 import platform
 import random
+import sys
 import time
 import traceback
 import typing
@@ -154,3 +156,36 @@ def catch_error(*args, ignore_except_list: List = None, raise_error: bool = True
 
 def is_linux():
     return platform.system().lower() == 'linux'
+
+
+class Confuse:
+    """混淆"""
+
+    def __init__(self):
+        self._cache = {}
+        self._hash_gen = self._gen_hash()
+
+    @staticmethod
+    def _gen_hash():
+        s = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u',
+             'v', 'w', 'x', 'y', 'z'}
+        for i in range(1, sys.maxsize):
+            yield from itertools.permutations(s, i)
+
+    def _gen(self):
+        return ''.join(next(self._hash_gen))
+
+    def hash_value(self, value: str):
+        result = self._cache.get(value, self._gen())
+        self._cache[value] = result
+        return self._cache[value]
+
+    def hash_values(self, values: List[str]):
+        return {value: self.hash_value(value) for value in values}
+
+    def hash_dict(self, row: dict, item):
+        row[item] = self.hash_value(row[item])
+
+    def hash_rows(self, rows: List[dict], item):
+        for row in rows:
+            self.hash_dict(row, item)
