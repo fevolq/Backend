@@ -9,7 +9,6 @@ import pandas as pd
 
 from dao import mysqlDB
 from model.dashboardP.util import read
-from utils.dict_to_obj import set_obj_attr
 from .filterP import FilterProcessor
 from .filterM import Filter
 from .datasetP import DatasetProcessor
@@ -38,11 +37,12 @@ class Chart:
         self.dataset: Dataset = None
         self.filters: [Filter] = None
 
-        self.all_cols = {}        # 所有字段
-        self.rows = {}            # 维度
-        self.cols = {}            # 指标
-        self.sorts = {}
-        self.conditions = {}
+        self.all_cols = {}          # 所有字段。{col.name: col}
+        self.rows = set()           # 维度。{col.name}
+        self.cols = set()           # 指标。{col.name}
+        self.sorts = set()          # 排序。{col.name}
+        self.filter_cols = {}       # 展开的过滤器的字段。{filter.name: col.name}
+        self.conditions = {}        # 条件。{col.name: condition}
         self.is_show = True
 
         self.execute_sql = None
@@ -87,7 +87,7 @@ class Chart:
     def __prepare_cols(self):
         """初始化chart需要的字段"""
         def do(col_conf, to_=None, is_dim=False):
-            to_ = {} if to_ is None else to_
+            to_ = set() if to_ is None else to_
             # 动态扩充字段
             step_cols, expand_args = self.__expand_col_step(col_conf)
             if len(expand_args) > 0:
@@ -104,7 +104,8 @@ class Chart:
                 chart_col = ChartCol(col)
                 chart_col.is_dim = is_dim
 
-                self.all_cols[chart_col.name] = to_[chart_col.name] = chart_col
+                to_.add(chart_col.name)
+                self.all_cols[chart_col.name] = chart_col
 
         # 维度
         for conf in self._rows:
@@ -125,12 +126,12 @@ class Chart:
 
             chart_col.order = True if col_conf['order'] == 'desc' else False
 
-            self.sorts[chart_col.name] = chart_col
+            self.sorts.add(chart_col.name)
 
     def __prepare_conditions(self):
         for col_name, condition in self._conditions.items():
             col: ChartCol = self.all_cols.setdefault(col_name, ChartCol({'field': col_name}))
-            self.conditions[col] = condition
+            self.conditions[col.name] = condition
 
     def __load_filters(self):
         for one_filter in self.filters:
@@ -139,15 +140,38 @@ class Chart:
                 continue
 
             col: ChartCol = self.all_cols.setdefault(relate_field, ChartCol({'field': relate_field}))
+            # 可展开的过滤器对应的字段，不能在chart中再次配置。当过滤器展开时，该字段会默认展示。
+            if one_filter.enable_expand and relate_field in [*self.rows, *self.cols]:
+                raise Exception(f'维度字段[{col.name}]与过滤器[{one_filter.name}]配置有冲突')
+
+            col.set_field(self.dataset)
             col.filter_m = one_filter
             col.is_dim = col.is_dim or one_filter.is_expand
-            col.set_field(self.dataset)
 
+            self.filter_cols[one_filter.name] = col.name
             if one_filter.has_effect_value():
-                self.conditions[col] = one_filter.get_condition()
+                self.conditions[col.name] = one_filter.get_condition()
 
     def get_dim_cols(self):
+        """
+        获取维度字段。{col.name: col}
+        :return:
+        """
         cols: {str: ChartCol} = {col_name: col for col_name, col in self.all_cols.items() if col.is_dim}
+        return cols
+
+    def get_expand_filter_cols(self):
+        """
+        获取展开的过滤器的字段。{filter.name: col}
+        :return:
+        """
+        cols: {str: ChartCol} = {}
+        filters = {one_filter.name: one_filter for one_filter in self.filters}
+        for filter_name, col_name in self.filter_cols.items():
+            if not filters[filter_name].is_expand:
+                continue
+            col = self.all_cols[col_name]
+            cols[filter_name] = col
         return cols
 
     @staticmethod
@@ -285,3 +309,11 @@ class ChartCol:
 
     def __repr__(self):
         return f'{self.__field}[{self.__label}]'
+
+    def ui_info(self):
+        return {
+            'name': self.alias,
+            'label': self.label,
+            'is_dim': self.is_dim,
+            'extra': self.extra,
+        }

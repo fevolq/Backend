@@ -37,7 +37,9 @@ class SqlGenerator:
     def __gen_select(self):
         select = dict([('value', '')])
 
-        select['cols'] = cols = {**self.__chart.rows, **self.__chart.cols}
+        cols = {col_name: self.__chart.all_cols[col_name] for col_name in [*self.__chart.rows, *self.__chart.cols]}
+        cols.update({col.name: col for col in self.__chart.get_expand_filter_cols().values()})
+        select['cols'] = cols
         value = ', '.join([f'{self.__chart.dataset.get_field_value_in_sql(chart_col.field)} AS {chart_col.alias}'
                            for _, chart_col in cols.items()])
         select['value'] = f'SELECT {value}'
@@ -67,8 +69,9 @@ class SqlGenerator:
 
         wheres = []
         args = []
-        for chart_col, condition in self.__chart.conditions.items():
-            where_str, where_args = sql_builder.gen_wheres_part('', {self.__chart.dataset.get_field_value_in_sql(chart_col.field): condition})
+        for col_name, condition in self.__chart.conditions.items():
+            col_expr = self.__chart.dataset.get_field_value_in_sql(self.__chart.all_cols[col_name].field)
+            where_str, where_args = sql_builder.gen_wheres_part('', {col_expr: condition})
             wheres.append(f'({where_str})')
             args.extend(where_args)
 
@@ -89,7 +92,7 @@ class SqlGenerator:
 
     def __gen_order_by(self):
         order_by = dict([('value', '')])
-        order_by['cols'] = cols = self.__chart.sorts
+        order_by['cols'] = cols = {col_name: self.__chart.all_cols[col_name] for col_name in self.__chart.sorts}
 
         values = []
         for _, chart_col in cols.items():
