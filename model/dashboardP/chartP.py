@@ -54,20 +54,27 @@ class ChartProcessor:
     def load_one_chart(self, chart: Chart):
         chart.load(self.filter_p, self._dataset_p)
 
-    def get_all_chart_cols(self) -> {str: ChartCol}:
-        """所有视图使用到的col"""
+    def get_all_chart_cols(self, use_chart_name: bool = True) -> {str: ChartCol}:
+        """
+        所有视图使用到的col
+        :param use_chart_name: true：dashboard中定义的chart名; false：chart文件名
+        :return: true: {chart_name.col_name: col}；false: {chart.name.col_name: col}
+        """
         cols = {}
         for chart_name, chart in self._charts.items():
-            chart_cols = {**chart.rows, **chart.cols}
-            cols.update({f'{chart_name}.{col_name}': col for col_name, col in chart_cols.items()})
+            name = chart_name if use_chart_name else chart.name
+            cols.update({f'{name}.{col_name}': chart.all_cols[col_name] for col_name in [*chart.rows, *chart.cols]})
         return cols
 
-    def get_all_file_cols(self) -> {str: ChartCol}:
-        """所有视图使用到的col。文件名.字段名: 字段"""
-        cols = {}
-        for chart_name, chart in self._charts.items():
-            chart_cols = {**chart.rows, **chart.cols}
-            cols.update({f'{chart.name}.{col_name}': col for col_name, col in chart_cols.items()})
+    def get_expand_filter_cols(self) -> {str: ChartCol}:
+        cols = {}       # filter.name: col
+        filters = self.filter_p.filters
+        for one_filter in filters:
+            if not one_filter.is_expand:
+                continue
+            for chart in self._charts.values():
+                if one_filter.name in chart.filter_cols and one_filter.name not in cols:
+                    cols[one_filter.name] = chart.all_cols[chart.filter_cols[one_filter.name]]
         return cols
 
     def get_chart(self, chart_name):
@@ -79,16 +86,16 @@ class ChartProcessor:
             self.load_one_chart(chart)
 
             df = chart.df
-            cols = self.get_all_chart_cols()
+            cols = self.get_all_chart_cols(True)
+            expand_filter_cols = list(self.get_expand_filter_cols().values())         # 展开的过滤器的字段
 
-            result_cols = [{
-                'name': col.alias,
-                'label': col.label,
-                'is_dim': col.is_dim,
-                'extra': col.extra,
-            } for _, col in cols.items() if col.visibility.upper() == 'VISIBLE']
+            # 页面展示的col
+            show_cols = [col.ui_info() for col in expand_filter_cols]
+            show_cols.extend([col.ui_info() for _, col in cols.items() if col.visibility.upper() == 'VISIBLE'])
 
+            # 数据字段
             data_cols = [col.alias for _, col in cols.items() if col.visibility.upper() in ('INVISIBLE', 'VISIBLE')]
+            data_cols.extend([col.alias for col in expand_filter_cols])
 
             extra = chart.extra
             self.extra.update(extra)
@@ -105,40 +112,46 @@ class ChartProcessor:
                 for chart in self._charts.values():
                     self.load_one_chart(chart)
 
-            cols = self.get_all_chart_cols()
+            cols = self.get_all_chart_cols(True)
+            expand_filter_cols = list(self.get_expand_filter_cols().values())  # 展开的过滤器的字段
 
             # 页面展示的col
-            result_cols = [{
-                'name': cols[col_name].alias,
-                'label': cols[col_name].label,
-                'is_dim': cols[col_name].is_dim,
-                'extra': cols[col_name].extra,
-            } for col_name in p_cols if col_name in cols and cols[col_name].visibility.upper() == 'VISIBLE']
+            show_cols = [col.ui_info() for col in expand_filter_cols]
+            show_cols.extend([cols[col_name].ui_info() for col_name in p_cols
+                              if col_name in cols and cols[col_name].visibility.upper() == 'VISIBLE'])
 
+            # 数据字段
             data_cols = [col.alias for _, col in cols.items() if
                          col.visibility.upper() in ('INVISIBLE', 'VISIBLE')]
+            data_cols.extend([col.alias for col in expand_filter_cols])
 
             df = pd.DataFrame()
-            last_keys = []
+            last_keys = {}
             for chart_name, chart in self._charts.items():
                 chart_df = chart.df
                 if chart_df.empty:
                     continue
                 elif df.empty:
                     df = chart_df
-                    last_keys = [col.alias for _, col in chart.get_dim_cols().items()]
+                    last_keys = {filter_name: col.alias
+                                 for filter_name, col in chart.get_expand_filter_cols().items()}
                     continue
-                keys = [col.alias for _, col in chart.get_dim_cols().items()]
-                df = pd.merge(df, chart_df, how=merge_type.lower(), left_on=last_keys, right_on=keys)
-                last_keys = keys        # TODO: 聚合字段待处理
+                keys = {filter_name: col.alias
+                        for filter_name, col in chart.get_expand_filter_cols().items()}
+                intersection_keys = set(last_keys) & set(keys)      # 两个df的维度交集过滤器
+
+                left_keys = [alias for filter_name, alias in last_keys.items() if filter_name in intersection_keys]
+                right_keys = [alias for filter_name, alias in keys.items() if filter_name in intersection_keys]
+                last_keys = {**keys, **last_keys}
+
+                df = pd.merge(df, chart_df, how=merge_type.lower(), left_on=left_keys, right_on=right_keys)
+            df = self.reload_df(df)
 
             result_extra = self.extra
 
-        df = self.reload_df(df)
-
         result = {
             'data': [] if df.empty else json.loads(df.loc[:, data_cols].to_json(orient='records')),
-            'cols': result_cols,
+            'cols': show_cols,
             'extra': result_extra
         }
         return result
@@ -151,10 +164,10 @@ class ChartProcessor:
     def reload_cal_df(self, df) -> pd.DataFrame:
         # 对某些字段的值进行计算重载
         # 存在循环依赖
-        re_pattern = re.compile(r'\[(.*?)\]')
+        re_pattern = re.compile(r'\[(.*?)]')
 
         chart_cols = self.get_all_chart_cols()
-        file_cols = self.get_all_file_cols()
+        file_cols = self.get_all_chart_cols(False)
 
         expr_cols = [k for k, col in chart_cols.items() if col.expr]
         cal_cols = {}
