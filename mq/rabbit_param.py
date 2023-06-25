@@ -12,10 +12,10 @@ import config
 
 class RabbitMQ:
 
-    config.RABBIT_HOST = 'localhost'
-    config.RABBIT_PORT = 5672
-    config.RABBIT_USER = 'guest'
-    config.RABBIT_PWD = 'root'
+    host = config.RABBIT_HOST
+    port = config.RABBIT_PORT
+    username = config.RABBIT_USER
+    password = config.RABBIT_PWD
 
     def __init__(self, queue_name, **options):
         self.queue_name = queue_name
