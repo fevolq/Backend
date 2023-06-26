@@ -9,7 +9,7 @@ import re
 
 import pandas as pd
 
-from utils import pools, util
+from utils import pools, util, confuse
 from .chartM import Chart, ChartCol
 from .datasetP import DatasetProcessor
 from .filterP import FilterProcessor
@@ -150,15 +150,15 @@ class ChartProcessor:
             result_extra = self.extra
 
         # 字段混淆
-        confuse = util.Confuse()
-        confuse.hash_rows(show_cols, 'name')
+        confuse_obj = confuse.Confuse()
+        confuse_obj.hash_rows(show_cols, 'name')
         data_cols_keys = list(data_cols.keys())
         for col_alias in data_cols_keys:
             col = data_cols.pop(col_alias)
             if col.visibility.upper() == 'VISIBLE':
-                col_alias = confuse.hash_value(col_alias)
+                col_alias = confuse_obj.hash_value(col_alias)
             data_cols[col_alias] = col
-        rename_df_cols = confuse.hash_values([value for value in df.columns])
+        rename_df_cols = confuse_obj.hash_values([value for value in df.columns])
         df.rename(columns=rename_df_cols, inplace=True)
 
         result = {
