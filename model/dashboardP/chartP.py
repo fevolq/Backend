@@ -33,8 +33,10 @@ class ChartProcessor:
 
     def init_charts(self, chart_name):
         """根据指定的chart名称，来初始化指定的chart"""
-        def get_chart(file_name, name):
-            chart = Chart(file_name)
+        def get_chart(name, config):
+            file_name = config['path']
+            chart_type = config.get('type', 'table')
+            chart = Chart(file_name, chart_type)
             chart.chart_name = name
             return chart
 
@@ -47,9 +49,9 @@ class ChartProcessor:
             self._is_merge = True
             merge_charts = p_config['merge_charts']
             for chart_name in merge_charts:
-                self._charts[chart_name] = get_chart(self._config[chart_name]['path'], chart_name)
+                self._charts[chart_name] = get_chart(chart_name, self._config[chart_name])
         else:
-            self._charts[chart_name] = get_chart(p_config['path'], chart_name)
+            self._charts[chart_name] = get_chart(chart_name, p_config)
 
     def load_one_chart(self, chart: Chart):
         chart.load(self.filter_p, self._dataset_p)

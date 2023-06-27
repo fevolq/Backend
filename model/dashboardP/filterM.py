@@ -5,15 +5,15 @@
 
 from dao import mysqlDB
 from exceptions import TipsException
-from .util import read
+from .reader import read
 from utils.dict_to_obj import set_obj_attr
 
 
 class Filter:
 
-    def __init__(self, name, processor_config):
-        self._config = read(('filter', processor_config['path'])) if processor_config.get('path') else {}
-        self._config.update(processor_config)
+    def __init__(self, name, p_config):
+        self._config = read('/'.join(('filter', p_config['path']))) if p_config.get('path') else {}
+        self._config.update(p_config)
 
         # -------------------------------默认配置---------------------------------
         self.name = name

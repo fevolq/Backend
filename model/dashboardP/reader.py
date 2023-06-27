@@ -7,6 +7,7 @@ import json
 import os
 from functools import wraps
 
+from dao import sql_builder, mysqlDB
 from model.bean import cache
 from utils import util
 
@@ -29,27 +30,75 @@ def with_cache(name):
 
 class Reader:
 
-    root_path = r'E:\Code\Github\Backend\model\dashboard_files'
+    relative_path = '../../dashboard_files'
+    absolute_path = ''
 
-    def __init__(self, name, mod: str = 'json'):
-        self.names = [name] if isinstance(name, str) else name
-        self.hash_name = util.md5(str(self.names))
+    def __init__(self, name: str, mod: str = 'json'):
+        """
+
+        :param name: path/file
+        :param mod:
+        """
+        self.name = name.lower()
+        self.hash_name = util.md5(str(self.name))
         self.mod = mod
 
     def __load_json(self):
-        file_path = os.path.join(self.root_path, *self.names) + '.json'
+        root_path = self.absolute_path or os.path.join(os.path.abspath(__file__), self.relative_path)
+        file_path = os.path.join(root_path, *self.name.split('/')) + '.json'
         with open(file_path.replace('\\', '/'), 'r', encoding='utf-8') as f:
             content = json.load(f)
         return content
+
+    def __load_db(self):
+        table = 'dashboard_conf'
+
+        sql, args = sql_builder.gen_select_sql(table, ['config'], condition={'name': {'=': self.name}}, limit=1)
+        res = mysqlDB.execute(sql, args)['result']
+        return json.loads(res[0]['config'])
 
     def load(self):
         @with_cache(self.hash_name)
         def __load():
             if self.mod == 'json':
                 return self.__load_json()
+            elif self.mod == 'db':
+                return self.__load_db()
 
         return __load()
 
     @classmethod
     def read(cls, *args, **kwargs):
         return Reader(*args, **kwargs).load()
+
+
+def read(name):
+    """
+
+    :param name: 文件路径，以/分隔
+    :return:
+    """
+    mod = 'db' if util.is_linux() else 'json'
+    config = Reader.read(name, mod=mod)
+
+    prefabs = set()
+    while config.get('prefab'):
+        file_paths = name.split('/')
+        prefab = config.pop('prefab')
+        if prefab in prefabs:
+            raise Exception(f'{name}]存在相互引用: {prefab}')
+        prefab_paths = prefab.split('/')
+        # 处理路径后退（如：../..）
+        for prefab_path in prefab_paths:
+            if prefab_path == '.':
+                continue
+            elif prefab_path == '..':
+                file_paths.pop()
+            else:
+                file_paths.append(prefab_path)
+
+        name = '/'.join(file_paths)
+        prefab_config = Reader.read(name, mod=mod)
+        config.update(prefab_config)
+
+    return config

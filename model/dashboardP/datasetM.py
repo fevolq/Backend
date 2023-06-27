@@ -7,13 +7,13 @@ import copy
 from typing import List
 import re
 
-from model.dashboardP.util import read
+from .reader import read
 
 
 class Dataset:
 
     def __init__(self, name):
-        self._config = read(('dataset', name))
+        self._config = read('/'.join(('dataset', name)))
 
         self.name = name
         self.title = self._config.get('title', None)

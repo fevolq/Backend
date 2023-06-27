@@ -3,14 +3,14 @@
 # CreateTime: 2023/5/26 15:56
 # FileName:
 
-from .util import read
+from .reader import read
 from utils.dict_to_obj import set_obj_attr
 
 
 class Dashboard:
 
     def __init__(self, name):
-        self._config = read(('dashboard', name))
+        self._config = read('/'.join(('dashboard', name)))
         self._name = name
 
         self.title = None

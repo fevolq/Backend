@@ -8,7 +8,7 @@ import copy
 import pandas as pd
 
 from dao import mysqlDB
-from model.dashboardP.util import read
+from .reader import read
 from .filterP import FilterProcessor
 from .filterM import Filter
 from .datasetP import DatasetProcessor
@@ -18,9 +18,10 @@ from .sqlG import SqlGenerator
 
 class Chart:
 
-    def __init__(self, file_name):
-        self._config = read(('chart', file_name))
+    def __init__(self, file_name, chart_type):
+        self._config = read('/'.join(('chart', chart_type, file_name)))
         self.chart_name = None         # 继承自 dashboard 中定义的视图名
+        self.chart_type = chart_type
 
         # ----------------------------文件配置---------------------------------
         self._title = self._config.get('title')
