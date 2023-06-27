@@ -7,7 +7,7 @@ import logging
 import time
 
 from flask import Flask, request, jsonify
-from gevent import monkey
+# from gevent import monkey
 
 import config
 from middleware import Middleware
@@ -16,8 +16,8 @@ import status_code
 import exceptions
 import controller
 
-if config.LOAD_PATCH and util.is_linux():
-    monkey.patch_all()
+# if config.LOAD_PATCH and util.is_linux():
+#     monkey.patch_all()
 
 
 # 日志初始化
