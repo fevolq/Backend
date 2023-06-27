@@ -155,12 +155,13 @@ class ChartProcessor:
         confuse_obj = confuse.Confuse()
         confuse_obj.hash_rows(show_cols, 'name')
         data_cols_keys = list(data_cols.keys())
+        confuse_cols = set()
         for col_alias in data_cols_keys:
             col = data_cols.pop(col_alias)
-            if col.visibility.upper() == 'VISIBLE':
-                col_alias = confuse_obj.hash_value(col_alias)
+            confuse_cols.add(col_alias)
+            col_alias = confuse_obj.hash_value(col_alias)       # 不混淆的字段，由其他属性定义
             data_cols[col_alias] = col
-        rename_df_cols = confuse_obj.hash_values([value for value in df.columns])
+        rename_df_cols = confuse_obj.hash_values([value for value in df.columns if value in confuse_cols])
         df.rename(columns=rename_df_cols, inplace=True)
 
         result = {
