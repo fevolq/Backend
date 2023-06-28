@@ -28,6 +28,13 @@ def with_cache(name):
     return do
 
 
+def clear_cache():
+    """清除dashboard配置缓存"""
+    dashboard_caches = cache.get_fuzzy('dashboard.%')
+    for cache_name in dashboard_caches:
+        cache.delete(cache_name)
+
+
 class Reader:
 
     relative_path = '../../dashboard_files'
@@ -40,7 +47,7 @@ class Reader:
         :param mod:
         """
         self.name = name.lower()
-        self.hash_name = util.md5(str(self.name))
+        self.cache_name = f'dashboard.{self.name}'
         self.mod = mod
 
     def __load_json(self):
@@ -58,7 +65,7 @@ class Reader:
         return json.loads(res[0]['config'])
 
     def load(self):
-        @with_cache(self.hash_name)
+        @with_cache(self.cache_name)
         def __load():
             if self.mod == 'json':
                 return self.__load_json()
