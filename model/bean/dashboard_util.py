@@ -35,7 +35,7 @@ class Writer:
             'config': json.dumps(config, indent=4, ensure_ascii=False),
             'update_at': util.asia_local_time()
         }
-        sql, args = sql_builder.gen_insert_sql(table, row, update_cols=['update_at'])
+        sql, args = sql_builder.gen_insert_sql(table, row, update_cols=['config', 'update_at'])
         res = mysqlDB.execute(sql, args)
         print(f'{self.name} {res}')
 
@@ -89,7 +89,7 @@ def from_files(files):
 if __name__ == '__main__':
     pass
 
-    file_ = 'dashboard/fund'
+    file_ = 'chart/table/user/user'
     # from_file(file_)
 
     files_ = {
