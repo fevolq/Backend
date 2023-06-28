@@ -147,9 +147,10 @@ class ChartProcessor:
                 last_keys = {**keys, **last_keys}
 
                 df = pd.merge(df, chart_df, how=merge_type.lower(), left_on=left_keys, right_on=right_keys)
-            df = self.reload_df(df)
 
             result_extra = self.extra
+
+        df = self.reload_df(df)
 
         # 字段混淆
         confuse_obj = confuse.Confuse()
@@ -174,7 +175,7 @@ class ChartProcessor:
 
     def reload_df(self, df) -> pd.DataFrame:
         df = self.reload_cal_df(df)
-        df = self.reload_fmt_df(df,)
+        df = self.reload_fmt_df(df)
         return df
 
     def reload_cal_df(self, df) -> pd.DataFrame:
