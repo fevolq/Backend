@@ -65,7 +65,7 @@ class ChartProcessor:
         cols = {}
         for chart_name, chart in self._charts.items():
             name = chart_name if use_chart_name else chart.name
-            cols.update({f'{name}.{col_name}': chart.all_cols[col_name] for col_name in [*chart.rows, *chart.cols]})
+            cols.update({f'{name}.{col_name}': chart.all_cols[col_name] for col_name in chart.row_col})
         return cols
 
     def get_expand_filter_cols(self) -> {str: ChartCol}:

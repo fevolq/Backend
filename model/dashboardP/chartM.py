@@ -39,6 +39,7 @@ class Chart:
         self.filters: [Filter] = None
 
         self.all_cols = {}          # 所有字段。{col.name: col}
+        self.row_col = []           # 维度 + 指标。由于set()无顺序
         self.rows = set()           # 维度。{col.name}
         self.cols = set()           # 指标。{col.name}
         self.sorts = set()          # 排序。{col.name}
@@ -106,6 +107,7 @@ class Chart:
                 chart_col.is_dim = is_dim
 
                 to_.add(chart_col.name)
+                self.row_col.append(chart_col.name)
                 self.all_cols[chart_col.name] = chart_col
 
         # 维度
