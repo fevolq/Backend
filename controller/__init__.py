@@ -10,6 +10,7 @@ from . import (
     permission_router,
     poem_router,
     dashboard_router,
+    cache_router,
 )
 
 blueprint = {
@@ -20,4 +21,5 @@ blueprint = {
     'permission': permission_router.permission_route,
     'poem': poem_router.poem_route,
     'dashboard': dashboard_router.dashboard_route,
+    'cache': cache_router.cache_route,
 }
