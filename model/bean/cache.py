@@ -3,6 +3,7 @@
 # CreateTime: 2023/6/3 17:10
 # FileName: 全局缓存
 
+import re
 import threading
 
 
@@ -57,6 +58,8 @@ class Cache:
             return self.__delete(name)
         elif action == 'clear':
             return self.__clear()
+        elif action == 'get_fuzzy':
+            return self.__get_fuzzy(name)
         else:
             raise Exception(f"暂无{action}的实现")
 
@@ -80,6 +83,16 @@ class Cache:
     def __clear(self):
         self.__caches.clear()
 
+    def __get_fuzzy(self, name) -> dict:
+        """
+        模糊查询，类似sql中的LIKE操作
+        :param name:
+        :return:
+        """
+        pattern = name.replace('%', '.*')
+        result = {key: self.__caches[key] for key in self.__caches if re.fullmatch(pattern, key)}
+        return result
+
 
 def do(action, **kwargs):
     name = kwargs.pop('name') if 'name' in kwargs else None
@@ -89,20 +102,55 @@ def do(action, **kwargs):
 
 
 def get(name):
+    """
+    查询，不存在则为None
+    :param name:
+    :return:
+    """
     return do("get", name=name)
 
 
+def get_fuzzy(name):
+    """
+    模糊查询，类似sql语句中的LIKE
+    :param name:
+    :return:
+    """
+    return do("get_fuzzy", name=name)
+
+
 def add(name, content):
+    """
+    添加缓存
+    :param name: 缓存名称
+    :param content: 内容
+    :return:
+    """
     return do("add", name=name, content=content)
 
 
 def update(name, content):
+    """
+    更新缓存
+    :param name:
+    :param content:
+    :return:
+    """
     return do("update", name=name, content=content)
 
 
 def delete(name):
+    """
+    删除指定缓存
+    :param name:
+    :return:
+    """
     return do("delete", name=name)
 
 
 def clear():
-    return do("delete")
+    """
+    清除所有缓存
+    :return:
+    """
+    return do("clear")
