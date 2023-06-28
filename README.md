@@ -10,7 +10,9 @@
 # 分支划分
 * main: 主分支
 * test: 测试分支
-* feature: 功能分支
+* init: 项目初始化构建
+* assess: 静态资源
+* feature/: 功能分支
 
 # 进度
 * 用户系统：完成
