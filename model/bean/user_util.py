@@ -92,7 +92,7 @@ def is_login(func):
     def decorated_func(*args, **kwargs):
         user = request.environ['metadata.user']
 
-        if user.is_login():
+        if not user.is_login():
             return {'code': StatusCode.unauthorized, 'msg': 'User not logged in'}
 
         return func(*args, **kwargs)
