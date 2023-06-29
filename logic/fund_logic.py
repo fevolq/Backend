@@ -84,19 +84,23 @@ def get_monitor(query):
     sql, args = sql_builder.gen_select_sql('fund_monitor', ['id', 'code', 'option', 'type', 'update_at'],
                                            condition=conditions, order_by=[('update_at', 'DESC')],
                                            limit=page_size, offset=(page - 1)*page_size)
-    res = mysqlDB.execute(sql, args)['result']
-    if res:
-        codes = [row['code'] for row in res]
+    count_sql, count_args = sql_builder.gen_select_sql('fund_monitor', [],
+                                                       count_item={'id': 'total'}, condition=conditions)
+    res = mysqlDB.execute_many([{'sql': sql, 'args': args}, {'sql': count_sql, 'args': count_args}])['result']
+    result['total'] = res[1][0]['total']
+    records = res[0]
+    if records:
+        codes = [row['code'] for row in records]
 
         # TODO: 可替换成实时api请求
         name_sql, name_args = sql_builder.gen_select_sql('fund', ['code', 'name'], condition={'code': {'in': codes}})
         name_res = mysqlDB.execute(name_sql, name_args, db_name='spider')['result']
         names = {item['code']: item['name'] for item in name_res}
 
-        for row in res:
+        for row in records:
             row['option'] = json.loads(row['option'])
             row['name'] = names.get(row['code'])
-    result['data'] = res
+    result['data'] = records
 
     return result
 
