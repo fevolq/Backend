@@ -5,7 +5,7 @@
 [接口文档]()
 
 # 介绍
-本项目基于flask，实现了**用户系统、数据分析**等。
+本项目基于flask，实现了**用户系统、[数据分析](https://fevolq.gitbook.io/dashboard/)**等。
 
 # 分支划分
 * main: 主分支
