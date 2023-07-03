@@ -22,3 +22,10 @@ def chart():
     query = request.json
     res = dashboard_logic.chart(query)
     return jsonify(res)
+
+
+@dashboard_route.route('filters', methods=['GET'])
+def filters_config():
+    query = dict(request.args)
+    res = dashboard_logic.filters_config(query)
+    return jsonify(res)
