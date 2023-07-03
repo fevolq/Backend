@@ -67,7 +67,7 @@ class Middleware:
             log_sls.info('Middleware', '封禁用户访问')
             return {'code': StatusCode.forbidden, 'msg': '系统升级中...'}
         elif result['uri'] not in config.NOT_CHECK_TOKEN_API and result['user'].is_invalid():
-            return {'code': StatusCode.forbidden, 'msg': '请重试！'}
+            return {'code': StatusCode.unauthorized, 'msg': '请重试！'}
 
 
 def load_request_args(request_):
