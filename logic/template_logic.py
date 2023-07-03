@@ -3,12 +3,12 @@
 # CreateTime: 2023/2/7 16:47
 # FileName:
 
-import status_code
+from status_code import StatusCode
 
 
 def info(request):
     data = {
-        'code': status_code.StatusCode.success,
+        'code': StatusCode.success,
         'method': request.method,
     }
     return data
