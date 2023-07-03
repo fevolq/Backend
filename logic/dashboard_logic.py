@@ -4,7 +4,7 @@
 # FileName:
 
 import status_code
-from model.dashboardP import DashboardProcessor
+from model.dashboardP import DashboardProcessor, FilterProcessor
 
 
 def dashboard_config(query: dict):
@@ -22,5 +22,18 @@ def chart(query: dict):
     data = {
         'code': status_code.StatusCode.success,
         'data': DashboardProcessor(dashboard_name, query).fetch_chart(chart_name)
+    }
+    return data
+
+
+def filters_config(query: dict):
+    p_config = {
+        'filters': [{'name': filter_name, 'path': filter_name}
+                    for filter_name in [str(name).strip().lower() for name in query['names'].split(',')]]
+    }
+    filters = FilterProcessor(p_config).get_config()['filters']
+    data = {
+        'code': status_code.StatusCode.success,
+        'data': {config['name']: config for config in filters}
     }
     return data

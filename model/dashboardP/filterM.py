@@ -18,12 +18,10 @@ class Filter:
         # -------------------------------默认配置---------------------------------
         self.name = name
         self.title = None
-        self.type = 'input'        # 过滤器类型。input、date、single、multi
+        self.type = 'input'        # 过滤器类型。input、date、single、multiple
         self.default_value = None
         self.enable_exclude = False  # 是否可排除（反向选择）
-        self.default_exclude = False
         self.enable_expand = False   # 是否可展开
-        self.default_expand = False
         self.required = False       # 是否必填
         self.extra = {}             # 直接透传至前端
         self.relate_chart = None        # 关联至视图的字段
@@ -69,9 +67,7 @@ class Filter:
             'type': self.type,
             'default_value': self.default_value,
             'enable_exclude': self.enable_exclude,
-            'default_exclude': self.default_exclude,
             'enable_expand': self.enable_expand,
-            'default_expand': self.default_expand,
             'options': options,
             'sql': self.__sql,
             'extra': self.extra,
