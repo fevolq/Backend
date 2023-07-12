@@ -42,8 +42,8 @@ def add_monitor(query):
     result = {
         'code': StatusCode.success,
     }
-
     current_user: User = request.environ['metadata.user']
+
     monitor_type = query['type'].lower()
     fund_code = query['code']
     assert fund_code
@@ -72,16 +72,18 @@ def get_monitor(query):
     result = {
         'code': StatusCode.success,
     }
-
     current_user: User = request.environ['metadata.user']
+
     page = int(query.get('page', 1))
     page_size = int(query.get('page_size', 20))
+    query_condition = query.get('query', {})
+
     conditions = {'uid': {'=': current_user.uid}}
-    if 'codes' in query and query['codes']:
-        codes = [str(code).strip() for code in query['codes'].split(',')]
+    if query_condition.get('codes'):
+        codes = [str(code).strip() for code in query_condition['codes'].split(',')]
         conditions['code'] = {'in': codes}
-    if 'type' in query and query['type']:
-        conditions['type'] = {'=': query['type'].lower()}
+    if query_condition.get('type'):
+        conditions['type'] = {'=': query_condition['type'].lower()}
 
     sql, args = sql_builder.gen_select_sql('fund_monitor', ['id', 'code', 'option', 'type', 'update_at'],
                                            condition=conditions, order_by=[('update_at', 'DESC')],
