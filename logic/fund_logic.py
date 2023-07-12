@@ -17,7 +17,7 @@ def get_option(data: dict, option_type):
         dates = (3, -3, 7, -7, 15, -15, 30, -30)
         option_ = {}
         for date in dates:
-            if str(date) not in data:
+            if str(date) not in data or data[str(date)] is None or str(data[str(date)]) == '':
                 continue
             option_[str(date)] = float(data[str(date)])
         return option_
@@ -25,9 +25,9 @@ def get_option(data: dict, option_type):
     def get_worth_option():
         return {
             'cost': float(data['cost']),
-            'worth': float(data['worth']) if 'worth' in data else None,
-            'growth': float(data['growth']) if 'growth' in data else None,
-            'lessen': float(data['lessen']) if 'lessen' in data else None,
+            'worth': float(data['worth']) if data.get('worth') else None,
+            'growth': float(data['growth']) if data.get('growth') else None,
+            'lessen': float(data['lessen']) if data.get('lessen') else None,
         }
 
     option_types = {
