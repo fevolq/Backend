@@ -2,6 +2,7 @@
 # python3.7
 # CreateTime: 2023/6/29 15:59
 # FileName:
+
 import json
 
 from flask import request
@@ -59,6 +60,7 @@ def add_monitor(query):
         'type': monitor_type,
         'option': json.dumps(option, indent=4, sort_keys=True),
         'update_at': util.asia_local_time(),
+        'remark': query.get('remark')
     }
     sql, args = sql_builder.gen_insert_sql('fund_monitor', row)
     res = mysqlDB.execute(sql, args)
@@ -83,7 +85,7 @@ def get_monitor(query):
     if query.get('type'):
         conditions['type'] = {'=': query['type'].lower()}
 
-    sql, args = sql_builder.gen_select_sql('fund_monitor', ['id', 'code', 'option', 'type', 'update_at'],
+    sql, args = sql_builder.gen_select_sql('fund_monitor', ['id', 'code', 'option', 'type', 'update_at', 'remark'],
                                            condition=conditions, order_by=[('update_at', 'DESC')],
                                            limit=page_size, offset=(page - 1)*page_size)
     count_sql, count_args = sql_builder.gen_select_sql('fund_monitor', [],
@@ -114,7 +116,7 @@ def update_monitor(query):
     current_user: User = request.environ['metadata.user']
 
     row_id = query['id']
-    record_sql, record_args = sql_builder.gen_select_sql('fund_monitor', ['uid', 'update_at', 'type'],
+    record_sql, record_args = sql_builder.gen_select_sql('fund_monitor', ['uid', 'update_at', 'type', 'remark'],
                                                          condition={'id': {'=': row_id}}, limit=1)
     record_res = mysqlDB.execute(record_sql, record_args)['result']
     if not record_res:
@@ -130,7 +132,8 @@ def update_monitor(query):
     option = get_option(query['option'], record['type'])
     row = {
         'option': json.dumps(option, indent=4, sort_keys=True),
-        'update_at': util.asia_local_time()
+        'update_at': util.asia_local_time(),
+        'remark': query.get('remark', record['remark'])
     }
     sql, args = sql_builder.gen_update_sql('fund_monitor', row,
                                            conditions={'id': {'=': row_id}, 'update_at': {'=': record['update_at']}})
