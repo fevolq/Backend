@@ -129,11 +129,12 @@ def update_monitor(query):
         result['code'] = StatusCode.is_conflict
         return result
 
-    option = get_option(query['option'], record['type'])
+    update_query = query['query']
+    option = get_option(update_query['option'], record['type'])
     row = {
         'option': json.dumps(option, indent=4, sort_keys=True),
         'update_at': util.asia_local_time(),
-        'remark': query.get('remark', record['remark'])
+        'remark': update_query.get('remark', record['remark'])
     }
     sql, args = sql_builder.gen_update_sql('fund_monitor', row,
                                            conditions={'id': {'=': row_id}, 'update_at': {'=': record['update_at']}})
