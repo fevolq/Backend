@@ -257,7 +257,7 @@ class Chart:
     def get_sql(self):
         sql = self.execute_sql
         for args in self.execute_args:
-            sql = sql.replace('%s', args)
+            sql = sql.replace('%s', args, 1)
         return sql
 
 
