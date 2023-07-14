@@ -122,6 +122,7 @@ class DataSource:
         self._config = config
 
         self.sql = None
+        self.db = None
         self.table = None
         self.label_field = None
         self.value_field = None
@@ -139,5 +140,5 @@ class DataSource:
         self.execute_sql = f'SELECT `table`.`{self.label_field}` AS "label", `table`.`{self.value_field}` AS "value"' \
                            f' FROM {from_table} GROUP BY {self.value_field}'
 
-        res = mysqlDB.execute(self.execute_sql)
+        res = mysqlDB.execute(self.execute_sql, db_name=self.db)
         self.options = res['result']
